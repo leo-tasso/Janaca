@@ -113,7 +113,7 @@ public class JanacaClient extends TablutClient {
                 //Construct the set of actions
                 Set<Action> possibleMoves = FindChildren(state, state.getTurn());
 
-                var selectedActionWithEval = minimax(state, possibleMoves, 3, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, state.getTurn());
+                var selectedActionWithEval = minimax(state, possibleMoves, 8, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, state.getTurn());
                 Action a = selectedActionWithEval.first();
                 System.out.println("Move selected: " + a.toString());
                 try {
@@ -140,32 +140,34 @@ public class JanacaClient extends TablutClient {
                 }
 
             } else {
-
-                if (this.getCurrentState().getTurn().equals(StateTablut.Turn.BLACK)) {
-                    if (state.getTurn().equals(StateTablut.Turn.WHITE)) {
-                        System.out.println("Waiting for your opponent move... ");
-                    } else if (state.getTurn().equals(StateTablut.Turn.WHITEWIN)) {
-                        System.out.println("YOU LOSE!");
-                        System.exit(0);
-                    } else if (state.getTurn().equals(StateTablut.Turn.BLACKWIN)) {
-                        System.out.println("YOU WIN!");
-                        System.exit(0);
-                    } else if (state.getTurn().equals(StateTablut.Turn.DRAW)) {
-                        System.out.println("DRAW!");
-                        System.exit(0);
-                    }
-
+                if (state.getTurn().equals(StateTablut.Turn.WHITE)) {
+                    System.out.println("Waiting for your opponent move... ");
+                } else if (state.getTurn().equals(StateTablut.Turn.WHITEWIN)) {
+                    System.out.println("YOU LOSE!");
+                    System.exit(0);
+                } else if (state.getTurn().equals(StateTablut.Turn.BLACKWIN)) {
+                    System.out.println("YOU WIN!");
+                    System.exit(0);
+                } else if (state.getTurn().equals(StateTablut.Turn.DRAW)) {
+                    System.out.println("DRAW!");
+                    System.exit(0);
                 }
             }
-
         }
     }
 
     private Tuple<Action, Double> minimax(State position, Set<Action> actions, int depth, Double alpha, Double beta, StateTablut.Turn turn) {
         if (depth == 0 || position.getTurn().equals(turn)) {
-            Action move = actions.stream()
-                    .max(Comparator.comparing(action -> this.euristics.check(position, action, turn, pastStates)))
-                    .orElse(null);
+            Action move = null;
+            if (turn.equals(StateTablut.Turn.WHITE)) {
+                move = actions.stream()
+                        .max(Comparator.comparing(action -> this.euristics.check(position, action, turn, pastStates)))
+                        .orElse(null);
+            } else {
+                move = actions.stream()
+                        .min(Comparator.comparing(action -> this.euristics.check(position, action, turn, pastStates)))
+                        .orElse(null);
+            }
             return new Tuple<>(move, this.euristics.check(position, move, turn, pastStates));
         }
 

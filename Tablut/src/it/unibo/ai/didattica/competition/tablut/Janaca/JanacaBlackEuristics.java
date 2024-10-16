@@ -18,7 +18,7 @@ public class JanacaBlackEuristics implements Euristics {
         State newState;
         try {
             newState = game.checkMove(position.clone(), action);
-            return (double) (Euristics.countPieces(position, State.Pawn.WHITE) + Euristics.countPieces(position, State.Pawn.KING) - Euristics.countPieces(newState, State.Pawn.KING) - Euristics.countPieces(newState, State.Pawn.WHITE));
+            return (double) (Euristics.countPieces(newState, State.Pawn.WHITE) + Euristics.countPieces(newState, State.Pawn.KING) - Euristics.countPieces(position, State.Pawn.KING) - Euristics.countPieces(position, State.Pawn.WHITE));
         } catch (Exception _) {
         }
         return Double.POSITIVE_INFINITY;

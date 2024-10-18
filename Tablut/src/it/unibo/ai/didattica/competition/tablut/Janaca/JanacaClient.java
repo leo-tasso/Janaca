@@ -113,7 +113,7 @@ public class JanacaClient extends TablutClient {
                 //Construct the set of actions
                 Set<Action> possibleMoves = FindChildren(state, state.getTurn());
 
-                var selectedActionWithEval = minimax(state, possibleMoves, 8, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, state.getTurn());
+                var selectedActionWithEval = minimax(state, possibleMoves, 2, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, state.getTurn());
                 Action a = selectedActionWithEval.first();
                 System.out.println("Move selected: " + a.toString());
                 try {
@@ -157,18 +157,18 @@ public class JanacaClient extends TablutClient {
     }
 
     private Tuple<Action, Double> minimax(State position, Set<Action> actions, int depth, Double alpha, Double beta, StateTablut.Turn turn) {
-        if (depth == 0 || position.getTurn().equals(turn)) {
+        if (depth == 0 || (!position.getTurn().equals(State.Turn.BLACK) && !position.getTurn().equals(State.Turn.WHITE))) {
             Action move = null;
             if (turn.equals(StateTablut.Turn.WHITE)) {
                 move = actions.stream()
-                        .max(Comparator.comparing(action -> this.euristics.check(position, action, turn, pastStates)))
+                        .max(Comparator.comparing(action -> this.euristics.check(position.clone(), action, turn, pastStates)))
                         .orElse(null);
             } else {
                 move = actions.stream()
-                        .min(Comparator.comparing(action -> this.euristics.check(position, action, turn, pastStates)))
+                        .min(Comparator.comparing(action -> this.euristics.check(position.clone(), action, turn, pastStates)))
                         .orElse(null);
             }
-            return new Tuple<>(move, this.euristics.check(position, move, turn, pastStates));
+            return new Tuple<>(move, this.euristics.check(position.clone(), move, turn, pastStates));
         }
 
         if (turn.equals(StateTablut.Turn.WHITE)) {
@@ -176,14 +176,14 @@ public class JanacaClient extends TablutClient {
             for (Action action : actions) {
                 State newState = null;
                 try {
-                    newState = this.rules.checkMove(position, action);
+                    newState = this.rules.checkMove(position.clone(), action);
                 } catch (Exception _) {
                     //if move not legal exception is thrown and the move is not added
                 }
 
                 var branch = minimax(newState, FindChildren(newState, StateTablut.Turn.BLACK), depth - 1, alpha, beta, StateTablut.Turn.BLACK);
-                if (branch.second() > maxEval.second()) maxEval = branch;
-                alpha = Math.max(alpha, branch.second);
+                if (branch.second() > maxEval.second()) maxEval = new Tuple<>(action, branch.second());
+                alpha = Math.max(alpha, branch.second());
                 if (beta <= alpha) break;
             }
             return maxEval;
@@ -193,14 +193,14 @@ public class JanacaClient extends TablutClient {
             for (Action action : actions) {
                 State newState = null;
                 try {
-                    newState = this.rules.checkMove(position, action);
+                    newState = this.rules.checkMove(position.clone(), action);
                 } catch (Exception _) {
                     //if move not legal exception is thrown and the move is not added
                 }
 
                 var branch = minimax(newState, FindChildren(newState, StateTablut.Turn.WHITE), depth - 1, alpha, beta, StateTablut.Turn.WHITE);
-                if (branch.second() < minEval.second()) minEval = branch;
-                beta = Math.min(beta, branch.second);
+                if (branch.second() < minEval.second()) minEval = new Tuple<>(action, branch.second());
+                beta = Math.min(beta, branch.second());
                 if (beta <= alpha) break;
             }
             return minEval;
@@ -212,7 +212,8 @@ public class JanacaClient extends TablutClient {
     private Set<Action> FindChildren(State state, StateTablut.Turn turn) {
         List<int[]> pawns = new ArrayList<>();
         List<int[]> empty = new ArrayList<>();
-
+        Set<Action> possibleMoves = new HashSet<>();
+        if (!state.getTurn().equals(State.Turn.BLACK) && !state.getTurn().equals(State.Turn.WHITE)) return possibleMoves;
         // Collect positions of pawns and empty boxes based on the player's turn
         for (int i = 0; i < state.getBoard().length; i++) {
             for (int j = 0; j < state.getBoard().length; j++) {
@@ -234,7 +235,6 @@ public class JanacaClient extends TablutClient {
             }
         }
 
-        Set<Action> possibleMoves = new HashSet<>();
 
         // Generate possible moves
         for (int[] pawn : pawns) {

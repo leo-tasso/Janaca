@@ -1,4 +1,4 @@
-package it.unibo.ai.didattica.competition.tablut.Janaca;
+package it.unibo.ai.didattica.competition.tablut.janaca.euristics;
 
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
 import it.unibo.ai.didattica.competition.tablut.domain.Game;
@@ -18,10 +18,10 @@ public class JanacaWhiteEuristics implements Euristics {
         State newState;
         try {
             newState = game.checkMove(position.clone(), action);
-            if(newState.getTurn().equals(State.Turn.WHITEWIN)) return 10.0;
-            return (double) (Euristics.countPieces(position, State.Pawn.BLACK) - Euristics.countPieces(newState, State.Pawn.BLACK))*2;
+            if (newState.getTurn().equals(State.Turn.WHITEWIN)) return 100.0;
+            return (double) -Euristics.countPieces(newState, State.Pawn.BLACK);
+        } catch (Exception _) {
         }
-        catch (Exception _){}
         return Double.NEGATIVE_INFINITY;
     }
 

@@ -1,4 +1,4 @@
-package it.unibo.ai.didattica.competition.tablut.Janaca;
+package it.unibo.ai.didattica.competition.tablut.janaca.euristics;
 
 import it.unibo.ai.didattica.competition.tablut.domain.*;
 

@@ -15,7 +15,9 @@ import java.util.*;
 public class JanacaClient extends TablutClient {
 
     public static final int TOLLERANCE = 5000; //5 secs
-    public static final int TAKE_BEST_MOVES_FACTOR = 1;
+    public static final int TAKE_BEST_MOVES_FACTOR = 3;
+    public static final Optional<Integer> CUSTOM_TIMEOUT = Optional.empty();  //Optional.of(5);  //set to override server timeout (in seconds)
+
     private final int game;
     private Game rules = null;
     private JanacaEuristics euristics = null;
@@ -27,7 +29,7 @@ public class JanacaClient extends TablutClient {
     public JanacaClient(String player, String name, int gameChosen, int timeout, String ipAddress) throws UnknownHostException, IOException {
         super(player, name, timeout, ipAddress);
         this.game = gameChosen;
-        this.timeout = timeout * 1000;
+        this.timeout = CUSTOM_TIMEOUT.orElse(timeout) * 1000;
     }
 
     public JanacaClient(String player, String name, int timeout, String ipAddress) throws UnknownHostException, IOException {
@@ -122,8 +124,13 @@ public class JanacaClient extends TablutClient {
                 //Construct the set of actions
                 Set<Action> possibleMoves = childrenFinder.find(state, state.getTurn());
 
-                var selectedActionWithEval = minimax(state, possibleMoves, 2, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, state.getTurn());
-                Action a = selectedActionWithEval.first();
+                int depth = 2;
+                Action a = null;
+                while (!timeEspired()) {
+                    var selectedActionWithEval = minimax(state, possibleMoves, depth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, state.getTurn());
+                    if (!timeEspired() || a == null) a = selectedActionWithEval.first();
+                    depth += 2;
+                }
                 if (a == null) a = possibleMoves.stream().findFirst().get();
                 System.out.println("Move selected: " + a.toString());
                 try {
@@ -223,9 +230,9 @@ public class JanacaClient extends TablutClient {
     private List<Action> SortActions(State position, Set<Action> actions, StateTablut.Turn turn) {
         return actions.stream()
                 .sorted(turn.equals(State.Turn.WHITE) ?
-                        ActionComparator.get(position, turn, euristics, pastStates).reversed():
+                        ActionComparator.get(position, turn, euristics, pastStates).reversed() :
                         ActionComparator.get(position, turn, euristics, pastStates))
-                .limit(actions.size()/ TAKE_BEST_MOVES_FACTOR)
+                .limit(actions.size() / TAKE_BEST_MOVES_FACTOR)
                 .toList();
     }
 

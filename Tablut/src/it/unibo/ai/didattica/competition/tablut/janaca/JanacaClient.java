@@ -15,6 +15,7 @@ import java.util.*;
 public class JanacaClient extends TablutClient {
 
     public static final int TOLLERANCE = 5000; //5 secs
+    public static final int TAKE_BEST_MOVES_FACTOR = 1;
     private final int game;
     private Game rules = null;
     private JanacaEuristics euristics = null;
@@ -123,6 +124,7 @@ public class JanacaClient extends TablutClient {
 
                 var selectedActionWithEval = minimax(state, possibleMoves, 2, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, state.getTurn());
                 Action a = selectedActionWithEval.first();
+                if (a == null) a = possibleMoves.stream().findFirst().get();
                 System.out.println("Move selected: " + a.toString());
                 try {
                     this.write(a);
@@ -223,6 +225,7 @@ public class JanacaClient extends TablutClient {
                 .sorted(turn.equals(State.Turn.WHITE) ?
                         ActionComparator.get(position, turn, euristics, pastStates).reversed():
                         ActionComparator.get(position, turn, euristics, pastStates))
+                .limit(actions.size()/ TAKE_BEST_MOVES_FACTOR)
                 .toList();
     }
 

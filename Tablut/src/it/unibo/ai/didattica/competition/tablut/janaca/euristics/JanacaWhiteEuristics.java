@@ -6,13 +6,12 @@ import it.unibo.ai.didattica.competition.tablut.domain.State;
 
 import java.util.List;
 
-public class JanacaWhiteEuristics implements Euristics {
+public class JanacaWhiteEuristics implements TurnSpecificEuristics {
     Game game;
 
     public JanacaWhiteEuristics(Game game) {
         this.game = game;
     }
-
     @Override
     public Double check(State position, Action action, List<State> pastStates) {
         State newState;

@@ -1,6 +1,7 @@
 package it.unibo.ai.didattica.competition.tablut.janaca;
 
 import it.unibo.ai.didattica.competition.tablut.janaca.euristics.JanacaEuristics;
+import it.unibo.ai.didattica.competition.tablut.janaca.utils.ActionComparator;
 import it.unibo.ai.didattica.competition.tablut.janaca.utils.ChildrenFinder;
 import it.unibo.ai.didattica.competition.tablut.janaca.utils.Tuple;
 import it.unibo.ai.didattica.competition.tablut.client.TablutClient;
@@ -13,16 +14,19 @@ import java.util.*;
 @SuppressWarnings("ALL")
 public class JanacaClient extends TablutClient {
 
+    public static final int TOLLERANCE = 5000; //5 secs
     private final int game;
-    Game rules = null;
-    JanacaEuristics euristics = null;
-    ChildrenFinder childrenFinder = null;
-
-    List<State> pastStates = new ArrayList<>();
+    private Game rules = null;
+    private JanacaEuristics euristics = null;
+    private ChildrenFinder childrenFinder = null;
+    private long timer = 0;
+    private int timeout = 0;
+    private List<State> pastStates = new ArrayList<>();
 
     public JanacaClient(String player, String name, int gameChosen, int timeout, String ipAddress) throws UnknownHostException, IOException {
         super(player, name, timeout, ipAddress);
         this.game = gameChosen;
+        this.timeout = timeout * 1000;
     }
 
     public JanacaClient(String player, String name, int timeout, String ipAddress) throws UnknownHostException, IOException {
@@ -113,7 +117,7 @@ public class JanacaClient extends TablutClient {
 
 
             if (this.getPlayer().equals(state.getTurn())) {
-
+                this.timer = System.currentTimeMillis();
                 //Construct the set of actions
                 Set<Action> possibleMoves = childrenFinder.find(state, state.getTurn());
 
@@ -161,7 +165,7 @@ public class JanacaClient extends TablutClient {
     }
 
     private Tuple<Action, Double> minimax(State position, Set<Action> actions, int depth, Double alpha, Double beta, StateTablut.Turn turn) {
-        if (depth == 0 || (!position.getTurn().equals(State.Turn.BLACK) && !position.getTurn().equals(State.Turn.WHITE))) {
+        if (depth == 0 || (!position.getTurn().equals(State.Turn.BLACK) && !position.getTurn().equals(State.Turn.WHITE)) || timeEspired()) {
             Action move = null;
             if (turn.equals(StateTablut.Turn.WHITE)) {
                 move = actions.stream()
@@ -177,7 +181,8 @@ public class JanacaClient extends TablutClient {
 
         if (turn.equals(StateTablut.Turn.WHITE)) {
             Tuple<Action, Double> maxEval = new Tuple<>(null, Double.NEGATIVE_INFINITY);
-            for (Action action : actions) {
+            for (Action action : SortActions(position, actions, turn)) {
+                if (timeEspired()) break;
                 State newState = null;
                 try {
                     newState = this.rules.checkMove(position.clone(), action);
@@ -194,7 +199,8 @@ public class JanacaClient extends TablutClient {
 
         } else {
             Tuple<Action, Double> minEval = new Tuple<>(null, Double.POSITIVE_INFINITY);
-            for (Action action : actions) {
+            for (Action action : SortActions(position, actions, turn)) {
+                if (timeEspired()) break;
                 State newState = null;
                 try {
                     newState = this.rules.checkMove(position.clone(), action);
@@ -210,6 +216,18 @@ public class JanacaClient extends TablutClient {
             return minEval;
         }
 
+    }
+
+    private List<Action> SortActions(State position, Set<Action> actions, StateTablut.Turn turn) {
+        return actions.stream()
+                .sorted(turn.equals(State.Turn.WHITE) ?
+                        ActionComparator.get(position, turn, euristics, pastStates).reversed():
+                        ActionComparator.get(position, turn, euristics, pastStates))
+                .toList();
+    }
+
+    private boolean timeEspired() {
+        return System.currentTimeMillis() - this.timer > this.timeout + TOLLERANCE;
     }
 
 

@@ -39,14 +39,14 @@ public interface Measures {
      */
     public int amountLeftEnemys(State actState, Action myOldPos);
 
-    /**
-     * Compute how long was my trip
-     * @param oldState
-     * @param actState
-     * @param whoPawn
-     * @return
-     */
-    public int amountTravelledCells(State oldState, State actState, Pawn whoPawn);
+//    /**
+//     * Compute how long was my trip
+//     * @param oldState
+//     * @param actState
+//     * @param whoPawn
+//     * @return
+//     */
+//    public int amountTravelledCells(State oldState, State actState, Pawn whoPawn);
 
     /**
      * Compute how long was my trip

@@ -93,10 +93,10 @@ public class MeasuresImpl implements  Measures {
         return this.exploreNearby(actState, this.getFromPos(myOldPos), false);
     }
 
-    @Override
-    public int amountTravelledCells(State oldState, State acState, Pawn whoPawn) {
-        return -1;
-    }
+//    @Override
+//    public int amountTravelledCells(State oldState, State acState, Pawn whoPawn) {
+//        return -1;
+//    }
 
     @Override
     public int amountTravelledCells(Action moveDone) {

@@ -9,44 +9,44 @@ public interface Measures {
 
     /**
      * Compute how many allies i have adiacent on my cell
-     * @param acState
+     * @param actState
      * @param myNewPos
      * @return
      */
-    public int amountReachedAllies(State acState, Pawn myNewPos);
+    public int amountReachedAllies(State actState, Action myNewPos);
 
     /**
      * Compute how many allies i left leaving my old position
-     * @param acState
-     * @param myNewPos
-     * @return
-     */
-    public int amountLeftAllies(State acState, Pawn myOldPos);
-
-    /**
-     * Compute how many enemy i have adiacent on my cell
-     * @param acState
-     * @param myNewPos
-     * @return
-     */
-    public int amountReachedEnemys(State acState, Pawn myNewPos);
-
-    /**
-     * Compute how many enemys i left leaving my old position
-     * @param acState
+     * @param actState
      * @param myOldPos
      * @return
      */
-    public int amountLeftEnemys(State acState, Pawn myOldPos);
+    public int amountLeftAllies(State actState, Action myOldPos);
+
+    /**
+     * Compute how many enemy i have adiacent on my cell
+     * @param actState
+     * @param myNewPos
+     * @return
+     */
+    public int amountReachedEnemys(State actState, Action myNewPos);
+
+    /**
+     * Compute how many enemys i left leaving my old position
+     * @param actState
+     * @param myOldPos
+     * @return
+     */
+    public int amountLeftEnemys(State actState, Action myOldPos);
 
     /**
      * Compute how long was my trip
      * @param oldState
-     * @param acState
+     * @param actState
      * @param whoPawn
      * @return
      */
-    public int amountTravelledCells(State oldState, State acState, Pawn whoPawn);
+    public int amountTravelledCells(State oldState, State actState, Pawn whoPawn);
 
     /**
      * Compute how long was my trip
@@ -71,10 +71,10 @@ public interface Measures {
 
     /**
      * Check if i can actually go near to the king
-     * @param acState
+     * @param actState
      * @return
      */
-    public boolean isKingReacheble(State acState);
+    public boolean isKingReacheble(State actState);
 
     /**
      * Compute how far is king 
@@ -87,11 +87,11 @@ public interface Measures {
 
     /**
      * 
-     * @param acState
+     * @param actState
      * @param whoPawn
      * @return
      */
-    public int computeFarFromCenter(State acState, Pawn whoPawn);
+    public int computeFarFromCenter(State actState, Pawn whoPawn);
 
     /**
      * Compute if attemp this move i can capture enemy pawns

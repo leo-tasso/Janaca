@@ -71,7 +71,7 @@
         </java>
     </target>
 
-    <target name="janacablack">
+    <target name="janacawhite">
         <java classname="it.unibo.ai.didattica.competition.tablut.janaca.JanacaWhiteClient" fork="true">
             <classpath>
                 <pathelement location="lib/gson-2.2.2.jar"/>

@@ -3,8 +3,11 @@ package it.unibo.ai.didattica.competition.tablut.janaca.euristics;
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
 import it.unibo.ai.didattica.competition.tablut.domain.Game;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
+import it.unibo.ai.didattica.competition.tablut.janaca.utils.JSONManager;
 
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -20,8 +23,6 @@ public class JanacaWhiteEuristics implements TurnSpecificEuristics {
 
     public JanacaWhiteEuristics(Game game) {
         this.game = game;
-
-
         Arrays.stream(Measures.class.getMethods())
                 .map(Method::getName)
                 .peek(System.out::println)
@@ -32,10 +33,14 @@ public class JanacaWhiteEuristics implements TurnSpecificEuristics {
          * Insert here some intuition to initialite better reinforcedCoefficent
          *
          */
-        //myCoefficients = List.of();
 
+        String baseName = "janacaWhite";
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
+        String timestamp = now.format(formatter);
+        String fileName = "./" + baseName + "_" + timestamp + ".json";
 
-
+        JSONManager.byProgramToFile(this.reinforcedCoefficients, fileName);
     }
 
     @Override

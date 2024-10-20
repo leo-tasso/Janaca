@@ -5,6 +5,7 @@ import it.unibo.ai.didattica.competition.tablut.domain.Game;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.janaca.utils.JSONManager;
 
+import java.io.File;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -39,6 +40,12 @@ public class JanacaWhiteEuristics implements TurnSpecificEuristics {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
         String timestamp = now.format(formatter);
         String fileName = "weight/" + baseName + "_" + timestamp + ".json";
+
+        // Create the "weight" directory if it doesn't exist
+        File directory = new File("weight");
+        if (!directory.exists()) {
+            directory.mkdir();
+        }
 
         JSONManager.byProgramToFile(this.reinforcedCoefficients, fileName);
     }

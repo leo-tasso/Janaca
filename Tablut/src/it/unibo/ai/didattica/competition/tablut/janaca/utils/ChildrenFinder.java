@@ -4,7 +4,6 @@ import it.unibo.ai.didattica.competition.tablut.domain.Action;
 import it.unibo.ai.didattica.competition.tablut.domain.Game;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.StateTablut;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,7 +21,11 @@ public class ChildrenFinder {
         List<int[]> pawns = new ArrayList<>();
         List<int[]> empty = new ArrayList<>();
         Set<Action> possibleMoves = new HashSet<>();
+
+        //if the game is not running, i.e. is not neither black or white turn, obv there is no possible moves
         if (!state.getTurn().equals(State.Turn.BLACK) && !state.getTurn().equals(State.Turn.WHITE)) return possibleMoves;
+        
+        
         // Collect positions of pawns and empty boxes based on the player's turn
         for (int i = 0; i < state.getBoard().length; i++) {
             for (int j = 0; j < state.getBoard().length; j++) {

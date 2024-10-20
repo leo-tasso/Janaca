@@ -96,6 +96,7 @@ public class JanacaClient extends TablutClient {
                 System.out.println("Error in game selection");
                 System.exit(4);
         }
+
         euristics = new JanacaEuristics(this.rules);
         childrenFinder = new ChildrenFinder(this.rules);
 
@@ -116,9 +117,10 @@ public class JanacaClient extends TablutClient {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException _) {
+                
             }
 
-
+            //if is my turn, i have to take a decision
             if (this.getPlayer().equals(state.getTurn())) {
                 this.timer = System.currentTimeMillis();
                 //Construct the set of actions
@@ -138,9 +140,10 @@ public class JanacaClient extends TablutClient {
                 } catch (ClassNotFoundException | IOException e) {
                     e.printStackTrace();
                 }
-
             }
 
+
+            //CHECK STATUS GAME: if i lose/win/draw, game have to stop
             if (this.getPlayer().equals(State.Turn.WHITE)) {
                 // If white player, is my turn
                 if (state.getTurn().equals(StateTablut.Turn.BLACK)) {

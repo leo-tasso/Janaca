@@ -3,7 +3,6 @@ package it.unibo.ai.didattica.competition.tablut.janaca.euristics;
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
 import it.unibo.ai.didattica.competition.tablut.domain.Game;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
-
 import java.util.List;
 
 public class JanacaBlackEuristics implements TurnSpecificEuristics {
@@ -12,7 +11,8 @@ public class JanacaBlackEuristics implements TurnSpecificEuristics {
     public JanacaBlackEuristics(Game game) {
         this.game = game;
     }
-@Override
+    
+    @Override
     public Double check(State position, Action action, List<State> pastStates) {
         State newState;
         try {

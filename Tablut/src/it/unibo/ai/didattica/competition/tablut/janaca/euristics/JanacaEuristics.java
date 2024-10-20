@@ -1,7 +1,6 @@
 package it.unibo.ai.didattica.competition.tablut.janaca.euristics;
 
 import it.unibo.ai.didattica.competition.tablut.domain.*;
-
 import java.util.List;
 
 public class JanacaEuristics implements Euristics {
@@ -12,7 +11,8 @@ public class JanacaEuristics implements Euristics {
         this.whiteEuristics = new JanacaWhiteEuristics(game);
         this.blackEuristics = new JanacaBlackEuristics(game);
     }
-@Override
+    
+    @Override
     public Double check(State position, Action action, StateTablut.Turn turn, List<State> pastStates){
         if(turn.equals(StateTablut.Turn.WHITE)){
             return this.whiteEuristics.check(position, action, pastStates);

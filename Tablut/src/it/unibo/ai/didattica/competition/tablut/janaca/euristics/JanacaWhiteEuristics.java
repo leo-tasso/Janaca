@@ -38,7 +38,7 @@ public class JanacaWhiteEuristics implements TurnSpecificEuristics {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
         String timestamp = now.format(formatter);
-        String fileName = "./" + baseName + "_" + timestamp + ".json";
+        String fileName = "weight/" + baseName + "_" + timestamp + ".json";
 
         JSONManager.byProgramToFile(this.reinforcedCoefficients, fileName);
     }

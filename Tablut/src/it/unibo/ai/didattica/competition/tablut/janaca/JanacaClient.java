@@ -126,11 +126,11 @@ public class JanacaClient extends TablutClient {
                 //Construct the set of actions
                 Set<Action> possibleMoves = childrenFinder.find(state, state.getTurn());
 
-                int depth = 2;
+                int depth = 0;
                 Action a = null;
                 while (!timeEspired()) {
                     var selectedActionWithEval = minimax(state, possibleMoves, depth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, state.getTurn());
-                    if (!timeEspired() || a == null) a = selectedActionWithEval.first();
+                    if ( (!timeEspired() || a == null) && selectedActionWithEval != null) a = selectedActionWithEval.first();
                     depth += 2;
                 }
                 if (a == null) a = possibleMoves.stream().findFirst().get();
@@ -177,6 +177,7 @@ public class JanacaClient extends TablutClient {
     }
 
     private Tuple<Action, Double> minimax(State position, Set<Action> actions, int depth, Double alpha, Double beta, StateTablut.Turn turn) {
+        if (timeEspired()) return null;
         if (depth == 0 || (!position.getTurn().equals(State.Turn.BLACK) && !position.getTurn().equals(State.Turn.WHITE)) || timeEspired()) {
             Action move = null;
             if (turn.equals(StateTablut.Turn.WHITE)) {
@@ -203,6 +204,7 @@ public class JanacaClient extends TablutClient {
                 }
 
                 var branch = minimax(newState, childrenFinder.find(newState, StateTablut.Turn.BLACK), depth - 1, alpha, beta, StateTablut.Turn.BLACK);
+                if (branch == null) return null;
                 if (branch.second() > maxEval.second()) maxEval = new Tuple<>(action, branch.second());
                 alpha = Math.max(alpha, branch.second());
                 if (beta <= alpha) break;
@@ -221,6 +223,7 @@ public class JanacaClient extends TablutClient {
                 }
 
                 var branch = minimax(newState, childrenFinder.find(newState, StateTablut.Turn.WHITE), depth - 1, alpha, beta, StateTablut.Turn.WHITE);
+                if (branch == null) return null;
                 if (branch.second() < minEval.second()) minEval = new Tuple<>(action, branch.second());
                 beta = Math.min(beta, branch.second());
                 if (beta <= alpha) break;

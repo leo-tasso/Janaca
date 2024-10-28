@@ -7,7 +7,6 @@ import it.unibo.ai.didattica.competition.tablut.janaca.utils.Tuple;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class MeasuresImpl implements Measures {
@@ -108,6 +107,13 @@ public class MeasuresImpl implements Measures {
         );
     }
 
+    private Optional<Tuple<Integer, Integer>> getKingPosition(State actState){
+        return Stream.iterate(0, i -> i < amountRows, i -> i++)
+                .flatMap(i -> Stream.iterate(0, ii -> ii < amountCols, ii -> ii++).map(j -> new Tuple<Integer, Integer>(i, j))) //create all positions
+                .filter( pp -> actState.getPawn(pp.first(), pp.second()) == Pawn.KING) // seleziono solo il re
+                .findFirst();
+    }
+
     private int exploreNearby(State actState, Tuple<Integer, Integer> start, boolean areAlly) {
         if ((actState.getTurn() == State.Turn.WHITE && areAlly) || (actState.getTurn() == State.Turn.BLACK && !areAlly)) {
             return this.getNearby(actState, start).whitePawn.size();
@@ -115,6 +121,7 @@ public class MeasuresImpl implements Measures {
             return this.getNearby(actState, start).blackPawn.size();
         }
     }
+
 
 //    public int amountReachedAllies(State actState, Action myNewPos) {
 //        return this.exploreNearby(actState, this.getToPos(myNewPos), true);

@@ -18,5 +18,7 @@ public interface Measures {
     int leftEnemies(State actState);
 
 
+
+
     //int hidden
 }

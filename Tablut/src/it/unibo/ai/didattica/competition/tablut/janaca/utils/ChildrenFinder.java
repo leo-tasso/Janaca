@@ -4,7 +4,7 @@ import it.unibo.ai.didattica.competition.tablut.domain.Action;
 import it.unibo.ai.didattica.competition.tablut.domain.Game;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.StateTablut;
-import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,14 +19,13 @@ public class ChildrenFinder {
 
     public Set<Action> find(State state, StateTablut.Turn turn) {
         List<int[]> pawns = new ArrayList<>();
-        List<int[]> empty = new ArrayList<>();
         Set<Action> possibleMoves = new HashSet<>();
 
-        //if the game is not running, i.e. is not neither black or white turn, obv there is no possible moves
-        if (!state.getTurn().equals(State.Turn.BLACK) && !state.getTurn().equals(State.Turn.WHITE)) return possibleMoves;
-        
-        
-        // Collect positions of pawns and empty boxes based on the player's turn
+        // If the game is not running, i.e. it's neither black nor white turn, no moves are possible
+        if (!state.getTurn().equals(State.Turn.BLACK) && !state.getTurn().equals(State.Turn.WHITE))
+            return possibleMoves;
+
+        // Collect positions of pawns based on the player's turn
         for (int i = 0; i < state.getBoard().length; i++) {
             for (int j = 0; j < state.getBoard().length; j++) {
                 // Check for white or king pawns
@@ -40,31 +39,45 @@ public class ChildrenFinder {
                         state.getPawn(i, j).equalsPawn(State.Pawn.BLACK.toString())) {
                     pawns.add(new int[]{i, j});
                 }
-                // Check for empty spaces
-                if (state.getPawn(i, j).equalsPawn(State.Pawn.EMPTY.toString())) {
-                    empty.add(new int[]{i, j});
-                }
             }
         }
 
+        // Parallelize the loop for each pawn using parallelStream
+        pawns.parallelStream().forEach(pawn -> {
+            int row = pawn[0];
+            int col = pawn[1];
+            String from = state.getBox(row, col);
 
-        // Generate possible moves
-        for (int[] pawn : pawns) {
-            for (int[] emptyBox : empty.stream().filter(e -> e[0] == pawn[0] || e[1] == pawn[1]).toList()) {
-                String from = state.getBox(pawn[0], pawn[1]);
-                String to = state.getBox(emptyBox[0], emptyBox[1]);
-                try {
-                    Action move = new Action(from, to, turn);
-                    this.rules.checkMove(state.clone(), move);
-                    possibleMoves.add(move);
-                } catch (IOException e) {
-                    e.printStackTrace(); // Handle IOException
-                } catch (Exception e) {
-                    // Move not legal, exception caught
-                }
-            }
-        }
+            // Check moves in all four directions
+            checkDirection(state, turn, from, row, col, -1, 0, possibleMoves); // Move up
+            checkDirection(state, turn, from, row, col, 1, 0, possibleMoves);  // Move down
+            checkDirection(state, turn, from, row, col, 0, -1, possibleMoves); // Move left
+            checkDirection(state, turn, from, row, col, 0, 1, possibleMoves);  // Move right
+        });
 
         return possibleMoves;
+    }
+
+    private void checkDirection(State state, StateTablut.Turn turn, String from, int row, int col, int rowDelta, int colDelta, Set<Action> possibleMoves) {
+        int newRow = row + rowDelta;
+        int newCol = col + colDelta;
+
+        // Continue moving in the direction until we hit the edge of the board or a blocked square
+        while (newRow >= 0 && newRow < state.getBoard().length && newCol >= 0 && newCol < state.getBoard().length) {
+            if (!state.getPawn(newRow, newCol).equalsPawn(State.Pawn.EMPTY.toString())) break;
+
+            String to = state.getBox(newRow, newCol);
+            try {
+                Action move = new Action(from, to, turn);
+                this.rules.checkMove(state.clone(), move);
+                possibleMoves.add(move);
+            } catch (Exception e) {
+                break; // Stop further checks in this direction if a move fails
+            }
+
+            // Move to the next square in the same direction
+            newRow += rowDelta;
+            newCol += colDelta;
+        }
     }
 }

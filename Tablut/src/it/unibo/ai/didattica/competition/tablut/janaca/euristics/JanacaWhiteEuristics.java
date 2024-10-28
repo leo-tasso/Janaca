@@ -5,8 +5,7 @@ import it.unibo.ai.didattica.competition.tablut.domain.Game;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 
 import java.lang.reflect.Method;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class JanacaWhiteEuristics implements TurnSpecificEuristics {
     Game game;
@@ -37,14 +36,60 @@ public class JanacaWhiteEuristics implements TurnSpecificEuristics {
         final MeasuresImpl measures = new MeasuresImpl(position);
         State newState;
 
+        final double CAPTURED_COEFF = 1000.0;
+        final double FRIENDILY_COEFF = 15.0;
+        final double FEAR_COEFF = 5.0;
 
+        final double DISCOVERING_PATH = 500.0;
+        final double ESCAPES = 1_000_000.0;
+
+        boolean haveMovedKing = position.getPawn(action.getRowFrom(),action.getColumnFrom()).equals(State.Pawn.KING);
 
         try {
             newState = game.checkMove(position.clone(), action);
 
-            int before = measures.leftEnemies(position);
-            int left = measures.leftEnemies(newState);
-            int captured = left - before;
+            if (newState.getTurn().equals(State.Turn.WHITEWIN)) {
+                return Double.POSITIVE_INFINITY;
+            }
+
+            double bias = 10000;
+
+            int before = 0; //measures.globalNearAllies(position, action);
+            int next = measures.globalNearAllies(newState, action);
+            double friendily = FRIENDILY_COEFF * (next - before);
+
+            before = 0; //measures.globalNearEnemies(position, action);
+            next = measures.globalNearEnemies(newState, action);
+            double enemies = FEAR_COEFF * (next - before);
+
+            before = 0; //measures.leftEnemies(position);
+            next = measures.leftEnemies(newState);
+            double captured = CAPTURED_COEFF * (next - before);
+
+            List<Double> myValues = new ArrayList<>(List.of(bias, friendily, enemies, captured));
+
+            if (haveMovedKing){
+                before = measures.amountPotentialEscapes(position,game);
+                next = measures.amountPotentialEscapes(newState, game);
+                double pot = DISCOVERING_PATH * (next - before);
+
+                before = 0; // measures.amountPotentialEscapes(position,game);
+                next = measures.amountRealEscapes(newState, game);
+                double escapes = ESCAPES * (next - before);
+
+                myValues.addAll(List.of(pot,escapes));
+            }
+
+            return Math.max(0, myValues.stream().reduce(Double::sum).orElseGet(() -> 0.0));
+
+        } catch (Exception _) {
+        }
+        return Double.NEGATIVE_INFINITY;
+    }
+
+}
+
+
 
 //            var mm = MeasuresOLD.class.getMethods();
 //
@@ -56,15 +101,3 @@ public class JanacaWhiteEuristics implements TurnSpecificEuristics {
 //                }
 //
 //            }
-
-            if (newState.getTurn().equals(State.Turn.WHITEWIN)) {
-                return Double.POSITIVE_INFINITY;
-            }
-
-            return (double) -Euristics.countPieces(newState, State.Pawn.BLACK);
-        } catch (Exception _) {
-        }
-        return Double.NEGATIVE_INFINITY;
-    }
-
-}

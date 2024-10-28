@@ -22,5 +22,7 @@ public interface Measures {
 
     int amountRealEscapes(State actState);
 
+
+
     //int hidden
 }

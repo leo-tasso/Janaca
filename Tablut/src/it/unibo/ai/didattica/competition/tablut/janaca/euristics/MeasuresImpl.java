@@ -5,6 +5,7 @@ import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
 import it.unibo.ai.didattica.competition.tablut.janaca.utils.Tuple;
 
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -111,11 +112,11 @@ public class MeasuresImpl implements Measures {
         );
     }
 
-    private Optional<Tuple<Integer, Integer>> getKingPosition(State actState){
+    private Tuple<Integer, Integer> getKingPosition(State actState){
         return Stream.iterate(0, i -> i < amountRows, i -> i++)
                 .flatMap(i -> Stream.iterate(0, ii -> ii < amountCols, ii -> ii++).map(j -> new Tuple<Integer, Integer>(i, j))) //create all positions
                 .filter( pp -> actState.getPawn(pp.first(), pp.second()) == Pawn.KING) // seleziono solo il re
-                .findFirst();
+                .findFirst().orElse(new Tuple<>(0,0));
     }
 
     private int exploreNearby(State actState, Tuple<Integer, Integer> start, boolean areAlly) {
@@ -124,6 +125,14 @@ public class MeasuresImpl implements Measures {
         } else {
             return this.getNearby(actState, start).blackPawn.size();
         }
+    }
+
+    public int amountAlliesNearKing(State actState){
+        return this.exploreNearby(actState, this.getKingPosition(actState), true);
+    }
+
+    public int amountEnemiesNearKing(State actState){
+        return this.exploreNearby(actState, this.getKingPosition(actState), false);
     }
 
 

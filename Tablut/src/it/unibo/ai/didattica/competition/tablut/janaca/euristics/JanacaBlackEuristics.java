@@ -29,7 +29,7 @@ public class JanacaBlackEuristics implements TurnSpecificEuristics {
                 value -= 20;
             }
 
-            m.amountAlliesNearKing(newState,action);
+            m.amountAlliesNearKing(newState);
 
 
         } catch (Exception _) {

@@ -1,9 +1,12 @@
 package it.unibo.ai.didattica.competition.tablut.janaca.euristics;
 
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
+import it.unibo.ai.didattica.competition.tablut.domain.Game;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
 import it.unibo.ai.didattica.competition.tablut.janaca.utils.Tuple;
+
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -68,6 +71,7 @@ public class MeasuresImpl implements Measures {
         return turn.equals(State.Turn.BLACK) ? countPieces(actState, Pawn.WHITE) : countPieces(actState, Pawn.BLACK);
     }
 
+
     private int countPieces(State position, State.Pawn pawnType) {
         return (int) Arrays.stream(position.getBoard())
                 .flatMap(Arrays::stream)
@@ -76,36 +80,55 @@ public class MeasuresImpl implements Measures {
     }
 
 
-    private Stream<Tuple<Integer, Integer>> obtainColumn(Tuple<Integer, Integer> start, boolean isHorrizontal, boolean isIncreasing, boolean keepStart){
-        int axisToModify = isHorrizontal ? start.first() : start.second();
 
-        return Stream.iterate(
-                axisToModify,
-                i -> (i >= 0) && (isHorrizontal ? i < amountCols : i < amountRows),
-                i -> isIncreasing ? i+1 : i-1
-        ).map(axis -> isHorrizontal
-                ? new Tuple<>(start.first(), axis)
-                : new Tuple<>(axis , start.second())
-        ).skip(keepStart ? 0 : 1);
-    }
+    private List<Tuple<Integer, Integer>> moveToExtremis(Tuple<Integer, Integer> start){
+        Tuple<Integer, Integer> a = new Tuple<>(start.first(), 0);
+        Tuple<Integer, Integer> b = new Tuple<>(start.first(), amountCols-1);
+        Tuple<Integer, Integer> c = new Tuple<>(0, start.second());
+        Tuple<Integer, Integer> d = new Tuple<>(amountRows-1, start.second());
 
-    private Stream<Stream<Tuple<Integer, Integer>>> nord_sud_ovest_est(Tuple<Integer, Integer> start, boolean keepStart){
-        var nord = obtainColumn(start,false,false,keepStart);
-        var sud = obtainColumn(start,false,true,keepStart);
-        var ovest = obtainColumn(start,true,false,keepStart);
-        var est  = obtainColumn(start,true,true,keepStart);
-        return Stream.of(nord, sud, ovest, est);
+        return List.of(a, b, c, d);
     }
 
     @Override
-    public int amountPotentialEscapes(State actState) {
-        return 0;
+    public int amountPotentialEscapes(State actState, Game rules) {
+        var kingPos = this.getKingPosition(actState);
+        var tmpState = actState.clone();
+        var tmpBoard = tmpState.getBoard();
+        nord_sud_ovest_est(kingPos,false)
+                .forEach(
+                        column -> column.forEach(pp -> tmpBoard[pp.first()][pp.second()] = Pawn.EMPTY)
+                );
+        tmpState.setBoard(tmpBoard);
+
+        return this.amountRealEscapes(tmpState, rules);
     }
 
     @Override
-    public int amountRealEscapes(State actState) {
-        return 0;
+    public int amountRealEscapes(State actState, Game rules) {
+        var kingPos = this.getKingPosition(actState);
+        return moveToExtremis(kingPos).stream().mapToInt(pp -> {
+
+            Action a = null;
+            try {
+                a = new Action(
+                        actState.getBox(kingPos.first(), kingPos.second()),
+                        actState.getBox(pp.first(), pp.second()),
+                        actState.getTurn()); //TODO - chiedere conferma
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            try {
+                rules.checkMove(actState, a);
+                return 1;
+            } catch (Exception e){
+                return 0;
+            }
+        }).sum();
     }
+
+
+//
 
 
 
@@ -179,6 +202,44 @@ public class MeasuresImpl implements Measures {
         }
     }
 
+    private Stream<Tuple<Integer, Integer>> obtainColumn(Tuple<Integer, Integer> start, boolean isHorrizontal, boolean isIncreasing, boolean keepStart){
+        int axisToModify = isHorrizontal ? start.first() : start.second();
+
+        return Stream.iterate(
+                axisToModify,
+                i -> (i >= 0) && (isHorrizontal ? i < amountCols : i < amountRows),
+                i -> isIncreasing ? i+1 : i-1
+        ).map(axis -> isHorrizontal
+                ? new Tuple<>(start.first(), axis)
+                : new Tuple<>(axis , start.second())
+        ).skip(keepStart ? 0 : 1);
+    }
+
+    private Stream<Stream<Tuple<Integer, Integer>>> nord_sud_ovest_est(Tuple<Integer, Integer> start, boolean keepStart){
+        var nord = obtainColumn(start,false,false,keepStart);
+        var sud = obtainColumn(start,false,true,keepStart);
+        var ovest = obtainColumn(start,true,false,keepStart);
+        var est  = obtainColumn(start,true,true,keepStart);
+        return Stream.of(nord, sud, ovest, est);
+    }
+
+
+//    @Override
+//    public int amountPotentialEscapes(State actState) {
+//        var kingPos = getKingPosition(actState);
+//        return nord_sud_ovest_est(kingPos, false)
+//                .mapToInt( column -> column.dropWhile() )
+//                .sum();
+//    }
+//
+//    @Override
+//    public int amountRealEscapes(State actState) {
+//        var kingPos = getKingPosition(actState);
+//
+//        return nord_sud_ovest_est(kingPos, false)
+//                .mapToInt( column -> column.dropWhile(pp -> actState.getPawn(pp.first(),pp.second())) )
+//                .sum();
+//    }
 
 
 

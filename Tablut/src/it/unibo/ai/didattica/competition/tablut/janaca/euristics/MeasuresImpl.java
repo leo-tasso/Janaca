@@ -47,17 +47,17 @@ public class MeasuresImpl implements Measures {
     private Integer countGlobalNearby(State actState, Pawn source, Pawn toConsider) {
         return Stream.iterate(0, i -> i < amountRows, i -> i++)
                 .flatMap(i -> Stream.iterate(0, ii -> ii < amountCols, ii -> ii++).map(j -> new Tuple<Integer, Integer>(i, j))) //create all positions
-                .filter( //tengo quelle "dove sono io"
+                .filter( //hold only "here i am"
                         pp ->
                                 source == Pawn.WHITE
-                                        ? Set.of(Pawn.WHITE, Pawn.KING).contains(actState.getPawn(pp.first(), pp.second())) //se sono i bianchi devo considerare anche il re
-                                        : actState.getPawn(pp.first(), pp.second()) == Pawn.BLACK //se sono i neri devo tenere solo i neri
+                                        ? Set.of(Pawn.WHITE, Pawn.KING).contains(actState.getPawn(pp.first(), pp.second())) //if i am white i have to consider king, too
+                                        : actState.getPawn(pp.first(), pp.second()) == Pawn.BLACK //if i am black i have to consider only black
                 )
-                .map(pp -> getNearby(actState, pp)) //ottengo il "payload" delle celle adiacenti
+                .map(pp -> getNearby(actState, pp)) //obtain the "payload" of adiacent cells
                 .map(
-                        payload -> toConsider == Pawn.WHITE //se devo contare i bianchi
-                                ? (payload.whitePawn.size() + (payload.kingPawn.isPresent() ? 1 : 0)) //estraggo i bianchi
-                                : payload.blackPawn.size()) //altrimenti i neri
+                        payload -> toConsider == Pawn.WHITE //if i have to counter white
+                                ? (payload.whitePawn.size() + (payload.kingPawn.isPresent() ? 1 : 0)) //i extract all white
+                                : payload.blackPawn.size()) //black otherwise
                 .reduce(Integer::sum).get();
     }
 
@@ -89,8 +89,8 @@ public class MeasuresImpl implements Measures {
 
         Iterator<Integer> dx = Stream.of(-1, 1).map(ddx -> start.first() + ddx).filter(i -> i>=0 || i<amountRows).iterator();
         Iterator<Integer> dy = Stream.of(-1, 1).map(ddy -> start.second() + ddy).filter(i -> i>=0 || i<amountRows).iterator();
-//                IntStream.rangeClosed(Math.max(0, start.first() - 1), Math.min(amountRows - 1, start.first() + 1)).iterator();
-//        Iterator<Integer> dy = IntStream.rangeClosed(Math.max(0, start.first() - 1), Math.min(amountCols - 1, start.first() + 1)).iterator();
+//      IntStream.rangeClosed(Math.max(0, start.first() - 1), Math.min(amountRows - 1, start.first() + 1)).iterator();
+//      Iterator<Integer> dy = IntStream.rangeClosed(Math.max(0, start.first() - 1), Math.min(amountCols - 1, start.first() + 1)).iterator();
 
         var whitePawnSym = Pawn.WHITE;
         var blackPawnSym = Pawn.BLACK;
@@ -103,7 +103,11 @@ public class MeasuresImpl implements Measures {
         return new MeasurePayload(
                 new HashSet<>(tmp.getOrDefault(whitePawnSym, List.of())),
                 new HashSet<>(tmp.getOrDefault(blackPawnSym, List.of())),
-                Optional.ofNullable(tmp.getOrDefault(kingPawnSym, List.of()).isEmpty() ? tmp.get(kingPawnSym).getFirst() : null)
+                Optional.ofNullable(
+                        tmp.getOrDefault(kingPawnSym, List.of()).isEmpty()
+                                ? tmp.get(kingPawnSym).getFirst()
+                                : null
+                )
         );
     }
 

@@ -68,7 +68,7 @@ public class MeasuresImpl implements Measures {
     @Override
     public int leftEnemies(State actState) {
         State.Turn turn = actState.getTurn();
-        return turn.equals(State.Turn.BLACK) ? countPieces(actState, Pawn.WHITE) : countPieces(actState, Pawn.BLACK);
+        return turn.equals(State.Turn.BLACK) ? this.amountWhite - countPieces(actState, Pawn.WHITE) : this.amountBlack - countPieces(actState, Pawn.BLACK);
     }
 
 

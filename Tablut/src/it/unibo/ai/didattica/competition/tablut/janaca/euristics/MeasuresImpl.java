@@ -34,23 +34,31 @@ public class MeasuresImpl implements Measures {
     @Override
     public int globalNearAllies(State actState, Action pos) {
         Pawn source = actState.getTurn().equals(State.Turn.WHITE) ? Pawn.WHITE : Pawn.BLACK;
-        Pawn toConsider = actState.getTurn().equals(State.Turn.WHITE) ? Pawn.WHITE : Pawn.BLACK;
-        return countGlobalNearby(actState, toConsider, toConsider);
+        Pawn toConsider = source;
+        return countGlobalNearby(actState, source, toConsider);
     }
 
     @Override
     public int globalNearEnemies(State actState, Action pos) {
         Pawn source = actState.getTurn().equals(State.Turn.WHITE) ? Pawn.WHITE : Pawn.BLACK;
-        Pawn toConsider = actState.getTurn().equals(State.Turn.WHITE) ? Pawn.BLACK : Pawn.WHITE;
-        return countGlobalNearby(actState, toConsider, source);
+        Pawn toConsider = (source == Pawn.WHITE) ? Pawn.BLACK : Pawn.WHITE;
+        return countGlobalNearby(actState, source, toConsider);
     }
 
-    private Integer countGlobalNearby(State actState, Pawn toConsider, Pawn source) {
+    private Integer countGlobalNearby(State actState, Pawn source, Pawn toConsider) {
         return Stream.iterate(0, i -> i < amountRows, i -> i++)
-                .flatMap(i -> Stream.iterate(0, ii -> ii < amountCols, ii -> ii++).map(j -> new Tuple<Integer, Integer>(i, j)))
-                .filter(pp -> actState.getPawn(pp.first(), pp.second()) == source)
-                .map(pp -> getNearby(actState, pp))
-                .map(payload -> toConsider == Pawn.WHITE ? payload.whitePawn.size() + (payload.kingPawn.isPresent() ? 1 : 0) : payload.blackPawn.size())
+                .flatMap(i -> Stream.iterate(0, ii -> ii < amountCols, ii -> ii++).map(j -> new Tuple<Integer, Integer>(i, j))) //create all positions
+                .filter( //tengo quelle "dove sono io"
+                        pp ->
+                                source == Pawn.WHITE
+                                        ? Set.of(Pawn.WHITE, Pawn.KING).contains(actState.getPawn(pp.first(), pp.second())) //se sono i bianchi devo considerare anche il re
+                                        : actState.getPawn(pp.first(), pp.second()) == Pawn.BLACK //se sono i neri devo tenere solo i neri
+                )
+                .map(pp -> getNearby(actState, pp)) //ottengo il "payload" delle celle adiacenti
+                .map(
+                        payload -> toConsider == Pawn.WHITE //se devo contare i bianchi
+                                ? (payload.whitePawn.size() + (payload.kingPawn.isPresent() ? 1 : 0)) //estraggo i bianchi
+                                : payload.blackPawn.size()) //altrimenti i neri
                 .reduce(Integer::sum).get();
     }
 

@@ -31,20 +31,6 @@ public class MeasuresImpl implements Measures {
     }
 
 
-    @Override
-    public int globalNearAllies(State actState, Action pos) {
-        Pawn source = actState.getTurn().equals(State.Turn.WHITE) ? Pawn.WHITE : Pawn.BLACK;
-        Pawn toConsider = source;
-        return countGlobalNearby(actState, source, toConsider);
-    }
-
-    @Override
-    public int globalNearEnemies(State actState, Action pos) {
-        Pawn source = actState.getTurn().equals(State.Turn.WHITE) ? Pawn.WHITE : Pawn.BLACK;
-        Pawn toConsider = (source == Pawn.WHITE) ? Pawn.BLACK : Pawn.WHITE;
-        return countGlobalNearby(actState, source, toConsider);
-    }
-
     private Integer countGlobalNearby(State actState, Pawn source, Pawn toConsider) {
         return Stream.iterate(0, i -> i < amountRows, i -> i++)
                 .flatMap(i -> Stream.iterate(0, ii -> ii < amountCols, ii -> ii++).map(j -> new Tuple<Integer, Integer>(i, j))) //create all positions
@@ -62,6 +48,19 @@ public class MeasuresImpl implements Measures {
                 .reduce(Integer::sum).get();
     }
 
+    @Override
+    public int globalNearAllies(State actState, Action pos) {
+        Pawn source = actState.getTurn().equals(State.Turn.WHITE) ? Pawn.WHITE : Pawn.BLACK;
+        Pawn toConsider = source;
+        return this.countGlobalNearby(actState, source, toConsider);
+    }
+
+    @Override
+    public int globalNearEnemies(State actState, Action pos) {
+        Pawn source = actState.getTurn().equals(State.Turn.WHITE) ? Pawn.WHITE : Pawn.BLACK;
+        Pawn toConsider = (source == Pawn.WHITE) ? Pawn.BLACK : Pawn.WHITE;
+        return this.countGlobalNearby(actState, source, toConsider);
+    }
 
 
 
@@ -78,13 +77,39 @@ public class MeasuresImpl implements Measures {
                 .count();
     }
 
-    private Tuple<Integer, Integer> getFromPos(Action toExtract) {
-        return new Tuple<>(toExtract.getRowFrom(), toExtract.getColumnFrom());
+
+    private Stream<Tuple<Integer, Integer>> obtainColumn(Tuple<Integer, Integer> start, boolean isHorrizontal, boolean isIncreasing, boolean keepStart){
+        int axisToModify = isHorrizontal ? start.first() : start.second();
+
+        return Stream.iterate(
+                axisToModify,
+                i -> (i >= 0) && (isHorrizontal ? i < amountCols : i < amountRows),
+                i -> isIncreasing ? i+1 : i-1
+        ).map(axis -> isHorrizontal
+                ? new Tuple<>(start.first(), axis)
+                : new Tuple<>(axis , start.second())
+        ).skip(keepStart ? 0 : 1);
     }
 
-    private Tuple<Integer, Integer> getToPos(Action toExtract) {
-        return new Tuple<>(toExtract.getRowTo(), toExtract.getColumnTo());
+    private Stream<Stream<Tuple<Integer, Integer>>> nord_sud_ovest_est(Tuple<Integer, Integer> start, boolean keepStart){
+        var nord = obtainColumn(start,false,false,keepStart);
+        var sud = obtainColumn(start,false,true,keepStart);
+        var ovest = obtainColumn(start,true,false,keepStart);
+        var est  = obtainColumn(start,true,true,keepStart);
+        return Stream.of(nord, sud, ovest, est);
     }
+
+    @Override
+    public int amountPotentialEscapes(State actState) {
+        return 0;
+    }
+
+    @Override
+    public int amountRealEscapes(State actState) {
+        return 0;
+    }
+
+
 
     private MeasurePayload getNearby(State toExplore, Tuple<Integer, Integer> start) {
 
@@ -112,12 +137,35 @@ public class MeasuresImpl implements Measures {
         );
     }
 
+
+
+
+
+
+
+
+
+    //OLD
+
+
+
+
+
+
     private int exploreNearby(State actState, Tuple<Integer, Integer> start, boolean areAlly) {
         if ((actState.getTurn() == State.Turn.WHITE && areAlly) || (actState.getTurn() == State.Turn.BLACK && !areAlly)) {
             return this.getNearby(actState, start).whitePawn.size();
         } else {
             return this.getNearby(actState, start).blackPawn.size();
         }
+    }
+
+    private Tuple<Integer, Integer> getFromPos(Action toExtract) {
+        return new Tuple<>(toExtract.getRowFrom(), toExtract.getColumnFrom());
+    }
+
+    private Tuple<Integer, Integer> getToPos(Action toExtract) {
+        return new Tuple<>(toExtract.getRowTo(), toExtract.getColumnTo());
     }
 
 //    public int amountReachedAllies(State actState, Action myNewPos) {

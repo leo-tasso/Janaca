@@ -7,9 +7,10 @@ import java.util.Set;
 
 public interface Measures {
 
-    Set<String> nearness = Set.of("globalNearAllies", "globalNeraEnemies");
+    Set<String> nearness = Set.of("globalNearAllies", "globalNearEnemies");
 
     Set<String> left = Set.of("leftEnemies");
+
 
     int globalNearAllies(State actState, Action pos);
 
@@ -17,6 +18,9 @@ public interface Measures {
 
     int leftEnemies(State actState);
 
+    int amountPotentialEscapes(State actState);
+
+    int amountRealEscapes(State actState);
 
     //int hidden
 }

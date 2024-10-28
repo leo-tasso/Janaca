@@ -142,13 +142,6 @@ public class MeasuresImpl implements Measures {
                 .findFirst().orElse(new Tuple<>(0,0));
     }
 
-    private int exploreNearby(State actState, Tuple<Integer, Integer> start, boolean areAlly) {
-        if ((actState.getTurn() == State.Turn.WHITE && areAlly) || (actState.getTurn() == State.Turn.BLACK && !areAlly)) {
-            return this.getNearby(actState, start).whitePawn.size();
-        } else {
-            return this.getNearby(actState, start).blackPawn.size();
-        }
-    }
 
     public int amountAlliesNearKing(State actState){
         return this.exploreNearby(actState, this.getKingPosition(actState), true);
@@ -158,6 +151,9 @@ public class MeasuresImpl implements Measures {
         return this.exploreNearby(actState, this.getKingPosition(actState), false);
     }
 
+
+
+    /////////////////////// OLD STUFF ////////////////////////
 
 //    public int amountReachedAllies(State actState, Action myNewPos) {
 //        return this.exploreNearby(actState, this.getToPos(myNewPos), true);
@@ -175,6 +171,13 @@ public class MeasuresImpl implements Measures {
 //        return this.exploreNearby(actState, this.getFromPos(myOldPos), false);
 //    }
 
+    private int exploreNearby(State actState, Tuple<Integer, Integer> start, boolean areAlly) {
+        if ((actState.getTurn() == State.Turn.WHITE && areAlly) || (actState.getTurn() == State.Turn.BLACK && !areAlly)) {
+            return this.getNearby(actState, start).whitePawn.size();
+        } else {
+            return this.getNearby(actState, start).blackPawn.size();
+        }
+    }
 
 
 

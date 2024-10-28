@@ -15,7 +15,7 @@ public class JanacaBlackEuristics implements TurnSpecificEuristics {
     @Override
     public Double check(State position, Action action, List<State> pastStates) {
         MeasuresImpl m = new MeasuresImpl(position);
-        double value = 0.0;
+        double value = 1000.0;
         State newState;
         try {
             newState = game.checkMove(position.clone(), action);
@@ -23,18 +23,20 @@ public class JanacaBlackEuristics implements TurnSpecificEuristics {
                 return Double.POSITIVE_INFINITY;
             }
 
-            value += m.leftEnemies(newState);
-
             if(pastStates.contains(newState)){
-                value -= 20;
+                value -= 500;
             }
 
-            m.amountAlliesNearKing(newState);
+            value += m.leftEnemies(newState) * 100;
 
+            value += m.amountAlliesNearKing(newState) * 50;
 
+            value -= m.amountPotentialEscapes(newState,game) * 15;
+            value -= m.amountRealEscapes(newState,game) * 30;
+
+            return value;
         } catch (Exception _) {
             return 0.0;
         }
-        return Double.POSITIVE_INFINITY;
     }
 }

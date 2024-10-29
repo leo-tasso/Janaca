@@ -18,7 +18,7 @@ public class JanacaEuristics implements Euristics {
             return this.whiteEuristics.check(position, action, pastStates);
         }
         else if(turn.equals(StateTablut.Turn.BLACK)){
-            return this.blackEuristics.check(position, action, pastStates);
+            return - this.blackEuristics.check(position, action, pastStates);
         }
         else{
             throw new IllegalArgumentException("Invalid turn: " + turn);

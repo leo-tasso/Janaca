@@ -33,8 +33,8 @@ public class MeasuresImpl implements Measures {
 
 
     private Integer countGlobalNearby(State actState, Pawn source, Pawn toConsider) {
-        return Stream.iterate(0, i -> i < amountRows, i -> i++)
-                .flatMap(i -> Stream.iterate(0, ii -> ii < amountCols, ii -> ii++).map(j -> new Tuple<Integer, Integer>(i, j))) //create all positions
+        return Stream.iterate(0, i -> i < amountRows, i -> i+1)
+                .flatMap(i -> Stream.iterate(0, ii -> ii < amountCols, ii -> ii+1).map(j -> new Tuple<Integer, Integer>(i, j))) //create all positions
                 .filter( //hold only "here i am"
                         pp ->
                                 source == Pawn.WHITE
@@ -68,7 +68,8 @@ public class MeasuresImpl implements Measures {
     @Override
     public int leftEnemies(State actState) {
         State.Turn turn = actState.getTurn();
-        return turn.equals(State.Turn.BLACK) ? this.amountWhite - countPieces(actState, Pawn.WHITE) : this.amountBlack - countPieces(actState, Pawn.BLACK);
+        //only because in the new state "turn is swapped"
+        return turn.equals(State.Turn.BLACK) ?  this.amountBlack - countPieces(actState, Pawn.BLACK) : this.amountWhite - countPieces(actState, Pawn.WHITE);
     }
 
 
@@ -134,8 +135,8 @@ public class MeasuresImpl implements Measures {
 
     private MeasurePayload getNearby(State toExplore, Tuple<Integer, Integer> start) {
 
-        Iterator<Integer> dx = Stream.of(-1, 1).map(ddx -> start.first() + ddx).filter(i -> i>=0 || i<amountRows).iterator();
-        Iterator<Integer> dy = Stream.of(-1, 1).map(ddy -> start.second() + ddy).filter(i -> i>=0 || i<amountRows).iterator();
+        Iterator<Integer> dx = Stream.of(-1, 1).map(ddx -> start.first() + ddx).filter(i -> i>=0 && i<amountRows).iterator();
+        Iterator<Integer> dy = Stream.of(-1, 1).map(ddy -> start.second() + ddy).filter(i -> i>=0 && i<amountCols).iterator();
 //      IntStream.rangeClosed(Math.max(0, start.first() - 1), Math.min(amountRows - 1, start.first() + 1)).iterator();
 //      Iterator<Integer> dy = IntStream.rangeClosed(Math.max(0, start.first() - 1), Math.min(amountCols - 1, start.first() + 1)).iterator();
 
@@ -152,15 +153,15 @@ public class MeasuresImpl implements Measures {
                 new HashSet<>(tmp.getOrDefault(blackPawnSym, List.of())),
                 Optional.ofNullable(
                         tmp.getOrDefault(kingPawnSym, List.of()).isEmpty()
-                                ? tmp.get(kingPawnSym).getFirst()
-                                : null
+                                ? null
+                                : tmp.get(kingPawnSym).getFirst()
                 )
         );
     }
 
     private Tuple<Integer, Integer> getKingPosition(State actState){
-        return Stream.iterate(0, i -> i < amountRows, i -> i++)
-                .flatMap(i -> Stream.iterate(0, ii -> ii < amountCols, ii -> ii++).map(j -> new Tuple<Integer, Integer>(i, j))) //create all positions
+        return Stream.iterate(0, i -> i < amountRows, i -> i+1)
+                .flatMap(i -> Stream.iterate(0, ii -> ii < amountCols, ii -> ii+1).map(j -> new Tuple<Integer, Integer>(i, j))) //create all positions
                 .filter( pp -> actState.getPawn(pp.first(), pp.second()) == Pawn.KING) // seleziono solo il re
                 .findFirst().orElse(new Tuple<>(0,0));
     }

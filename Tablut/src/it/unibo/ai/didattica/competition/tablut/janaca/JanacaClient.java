@@ -10,13 +10,14 @@ import it.unibo.ai.didattica.competition.tablut.domain.*;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.*;
 
 @SuppressWarnings("ALL")
 public class JanacaClient extends TablutClient {
 
     public static final int TOLLERANCE = 5000; //5 secs
     public static final int TAKE_BEST_MOVES_FACTOR = 3;
-    public static final Optional<Integer> CUSTOM_TIMEOUT = Optional.empty();  //Optional.of(5);  //set to override server timeout (in seconds)
+    public static final Optional<Integer> CUSTOM_TIMEOUT = Optional.of(15);  //set to override server timeout (in seconds)
 
     private final int game;
     private Game rules = null;
@@ -125,15 +126,36 @@ public class JanacaClient extends TablutClient {
             if (this.getPlayer().equals(state.getTurn())) {
                 this.timer = System.currentTimeMillis();
                 //Construct the set of actions
+                ExecutorService executor = Executors.newSingleThreadExecutor();
+
                 Set<Action> possibleMoves = childrenFinder.find(state, state.getTurn());
 
                 int depth = 0;
                 Action a = null;
-                while (!timeEspired()) {
-                    var selectedActionWithEval = minimax(state, possibleMoves, depth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, state.getTurn());
-                    if ((!timeEspired() || a == null) && selectedActionWithEval != null)
-                        a = selectedActionWithEval.first();
-                    depth += 2;
+                try {
+                    while (!this.timeEspired()) {
+                        int currentDepth = depth;
+                        State finalState = state;
+                        Future<Tuple<Action, Double>> futureTask = executor.submit(() -> minimax(finalState, possibleMoves, currentDepth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, finalState.getTurn()));
+
+                        try {
+                            // Wait for the task to complete within the time limit
+                            Tuple<Action, Double> selectedActionWithEval = futureTask.get(this.leftTime(), TimeUnit.MILLISECONDS);
+                            if (selectedActionWithEval != null) {
+                                a = selectedActionWithEval.first();
+                            }
+                        } catch (TimeoutException e) {
+                            futureTask.cancel(true); // Cancel the task if it takes too long
+                            break;
+                        } catch (InterruptedException | ExecutionException e) {
+                            e.printStackTrace();
+                            break;
+                        }
+
+                        depth += 2;
+                    }
+                } finally {
+                    executor.shutdownNow();
                 }
                 if (a == null) a = possibleMoves.stream().findFirst().get();
                 System.out.println("Move selected: " + a.toString());
@@ -179,7 +201,7 @@ public class JanacaClient extends TablutClient {
     }
 
     private Tuple<Action, Double> minimax(State position, Set<Action> actions, int depth, Double alpha, Double beta, StateTablut.Turn turn) {
-        if (depth == 0 || (!position.getTurn().equals(State.Turn.BLACK) && !position.getTurn().equals(State.Turn.WHITE)) || timeEspired()) {
+        if (depth == 0 || (!position.getTurn().equals(State.Turn.BLACK) && !position.getTurn().equals(State.Turn.WHITE))) {
             Action move = null;
             if (position.getTurn().equals(StateTablut.Turn.WHITE)) {
                 var sortedActions = actions.stream()
@@ -212,7 +234,7 @@ public class JanacaClient extends TablutClient {
                 }
                 Tuple<Action, Double> branch = new Tuple<>(null, Double.NEGATIVE_INFINITY);
                 if (!newState.getTurn().equals(State.Turn.BLACK) && !newState.getTurn().equals(State.Turn.WHITE)) {
-                    branch = new Tuple<>(action, this.euristics.check(newState, action, turn, pastStates));
+                    branch = new Tuple<>(action, this.euristics.check(position, action, turn, pastStates));
                 } else {
                     branch = minimax(newState, childrenFinder.find(newState, StateTablut.Turn.BLACK), depth - 1, alpha, beta, StateTablut.Turn.BLACK);
                 }
@@ -233,7 +255,7 @@ public class JanacaClient extends TablutClient {
                 }
                 Tuple<Action, Double> branch = new Tuple<>(null, Double.POSITIVE_INFINITY);
                 if (!newState.getTurn().equals(State.Turn.BLACK) && !newState.getTurn().equals(State.Turn.WHITE)) {
-                    branch = new Tuple<>(action, this.euristics.check(newState, action, turn, pastStates));
+                    branch = new Tuple<>(action, this.euristics.check(position, action, turn, pastStates));
                 } else {
                     branch = minimax(newState, childrenFinder.find(newState, StateTablut.Turn.WHITE), depth - 1, alpha, beta, StateTablut.Turn.WHITE);
                 }
@@ -257,6 +279,10 @@ public class JanacaClient extends TablutClient {
 
     private boolean timeEspired() {
         return System.currentTimeMillis() - this.timer > this.timeout + TOLLERANCE;
+    }
+
+    private long leftTime() {
+        return this.timeout - TOLLERANCE - System.currentTimeMillis() + this.timer;
     }
 
 

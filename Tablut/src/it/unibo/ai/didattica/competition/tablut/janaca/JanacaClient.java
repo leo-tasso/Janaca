@@ -16,8 +16,8 @@ import java.util.concurrent.*;
 public class JanacaClient extends TablutClient {
 
     public static final int TOLLERANCE = 5000; //5 secs
-    public static final int TAKE_BEST_MOVES_FACTOR = 3;
-    public static final Optional<Integer> CUSTOM_TIMEOUT = Optional.of(15);  //set to override server timeout (in seconds)
+    public static final int TAKE_BEST_MOVES_FACTOR = 1;
+    public static final Optional<Integer> CUSTOM_TIMEOUT = Optional.of(150000);  //set to override server timeout (in seconds)
 
     private final int game;
     private Game rules = null;
@@ -25,7 +25,6 @@ public class JanacaClient extends TablutClient {
     private ChildrenFinder childrenFinder = null;
     private long timer = 0;
     private int timeout = 0;
-    private List<State> pastStates = new ArrayList<>();
 
     public JanacaClient(String player, String name, int gameChosen, int timeout, String ipAddress) throws UnknownHostException, IOException {
         super(player, name, timeout, ipAddress);
@@ -113,7 +112,6 @@ public class JanacaClient extends TablutClient {
             }
             System.out.println("Current state:");
             state = this.getCurrentState();
-            pastStates.add(state);
             System.out.println(state.toString());
             try {
                 Thread.sleep(1000);
@@ -128,16 +126,15 @@ public class JanacaClient extends TablutClient {
                 //Construct the set of actions
                 ExecutorService executor = Executors.newSingleThreadExecutor();
 
-                Set<Action> possibleMoves = childrenFinder.find(state, state.getTurn());
+                Set<Tuple<Action, State>>  possibleMoves = childrenFinder.find(state, state.getTurn());
 
                 int depth = 0;
                 Action a = null;
                 try {
-                    while (!this.timeEspired()) {
+                    while (!this.timeEspired() && depth <2) {
                         int currentDepth = depth;
                         State finalState = state;
                         Future<Tuple<Action, Double>> futureTask = executor.submit(() -> minimax(finalState, possibleMoves, currentDepth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, finalState.getTurn()));
-
                         try {
                             // Wait for the task to complete within the time limit
                             Tuple<Action, Double> selectedActionWithEval = futureTask.get(this.leftTime(), TimeUnit.MILLISECONDS);
@@ -157,7 +154,7 @@ public class JanacaClient extends TablutClient {
                 } finally {
                     executor.shutdownNow();
                 }
-                if (a == null) a = possibleMoves.stream().findFirst().get();
+                if (a == null) a = possibleMoves.stream().findFirst().get().first();
                 System.out.println("Move selected: " + a.toString());
                 try {
                     this.write(a);
@@ -200,45 +197,47 @@ public class JanacaClient extends TablutClient {
         }
     }
 
-    private Tuple<Action, Double> minimax(State position, Set<Action> actions, int depth, Double alpha, Double beta, StateTablut.Turn turn) {
+    private Tuple<Action, Double> minimax(State position, Set<Tuple<Action, State>> actions, int depth, Double alpha, Double beta, StateTablut.Turn turn) {
         if (depth == 0 || (!position.getTurn().equals(State.Turn.BLACK) && !position.getTurn().equals(State.Turn.WHITE))) {
-            Action move = null;
+            Tuple<Action, State> move = null;
             if (position.getTurn().equals(StateTablut.Turn.WHITE)) {
-                var sortedActions = actions.stream()
-                        .sorted((Comparator.comparing(action -> -this.euristics.check(position.clone(), action, turn, pastStates))))
-                        .map(action -> new Tuple<Action, Double>(action, this.euristics.check(position.clone(), action, turn, pastStates)))
+
+                var debugList = actions.stream()
+                        .sorted(Comparator.comparing(newStateTuple -> -this.euristics.check(newStateTuple.second(),StateTablut.Turn.WHITE)))
+                        .map(newStateTuple -> new Tuple(newStateTuple, this.euristics.check(newStateTuple.second(),StateTablut.Turn.WHITE)))
                         .toList();
-                move = sortedActions.get(0).first();
-                //.max(Comparator.comparing(action -> this.euristics.check(position.clone(), action, turn, pastStates)))
-                //.orElse(null);
+
+               move = actions.stream()
+                .max(Comparator.comparing(newStateTuple -> this.euristics.check(newStateTuple.second(),StateTablut.Turn.WHITE)))
+                .orElse(null);
             } else if (position.getTurn().equals(StateTablut.Turn.BLACK)) {
-                var sortedActions = actions.stream()
-                        .sorted((Comparator.comparing(action -> this.euristics.check(position.clone(), action, turn, pastStates))))
-                        .map(action -> new Tuple<Action, Double>(action, this.euristics.check(position.clone(), action, turn, pastStates)))
+
+
+                var debugList = actions.stream()
+                        .sorted(Comparator.comparing(newStateTuple -> this.euristics.check(newStateTuple.second(),StateTablut.Turn.BLACK)))
+                        .map(newStateTuple -> new Tuple(newStateTuple, this.euristics.check(newStateTuple.second(),StateTablut.Turn.BLACK)))
                         .toList();
-                move = sortedActions.get(0).first();
-                //.min(Comparator.comparing(action -> this.euristics.check(position.clone(), action, turn, pastStates)))
-                //.orElse(null);
+
+                move = actions.stream()
+                .min(Comparator.comparing(newStateTuple -> this.euristics.check(newStateTuple.second(),StateTablut.Turn.BLACK)))
+                .orElse(null);
             }
-            return new Tuple<>(move, this.euristics.check(position.clone(), move, turn, pastStates));
+            if (move == null) {
+                int debugVariable =0;
+            }
+            return new Tuple<>(move.first(), this.euristics.check(move.second(),position.getTurn()));
         }
 
         if (turn.equals(StateTablut.Turn.WHITE)) {
             Tuple<Action, Double> maxEval = new Tuple<>(null, Double.NEGATIVE_INFINITY);
-            for (Action action : SortActions(position, actions, turn)) {
-                State newState = null;
-                try {
-                    newState = this.rules.checkMove(position.clone(), action);
-                } catch (Exception _) {
-                    //if move not legal exception is thrown and the move is not added
-                }
+            for (Tuple<Action, State> newState : SortActions(actions, turn)) {
                 Tuple<Action, Double> branch = new Tuple<>(null, Double.NEGATIVE_INFINITY);
-                if (!newState.getTurn().equals(State.Turn.BLACK) && !newState.getTurn().equals(State.Turn.WHITE)) {
-                    branch = new Tuple<>(action, this.euristics.check(position, action, turn, pastStates));
+                if (!newState.second().getTurn().equals(State.Turn.BLACK) && !newState.second().getTurn().equals(State.Turn.WHITE)) {
+                    branch = new Tuple<>(newState.first(), this.euristics.check(newState.second(),StateTablut.Turn.WHITE));
                 } else {
-                    branch = minimax(newState, childrenFinder.find(newState, StateTablut.Turn.BLACK), depth - 1, alpha, beta, StateTablut.Turn.BLACK);
+                    branch = minimax(newState.second(), childrenFinder.find(newState.second(), StateTablut.Turn.BLACK), depth - 1, alpha, beta, StateTablut.Turn.BLACK);
                 }
-                if (branch.second() > maxEval.second()) maxEval = new Tuple<>(action, branch.second());
+                if (branch.second() > maxEval.second()) maxEval = new Tuple<>(newState.first(), branch.second());
                 alpha = Math.max(alpha, branch.second());
                 if (beta <= alpha) break;
             }
@@ -246,20 +245,14 @@ public class JanacaClient extends TablutClient {
 
         } else {
             Tuple<Action, Double> minEval = new Tuple<>(null, Double.POSITIVE_INFINITY);
-            for (Action action : SortActions(position, actions, turn)) {
-                State newState = null;
-                try {
-                    newState = this.rules.checkMove(position.clone(), action);
-                } catch (Exception _) {
-                    //if move not legal exception is thrown and the move is not added
-                }
+            for (Tuple<Action, State> newState : SortActions(actions, turn)) {
                 Tuple<Action, Double> branch = new Tuple<>(null, Double.POSITIVE_INFINITY);
-                if (!newState.getTurn().equals(State.Turn.BLACK) && !newState.getTurn().equals(State.Turn.WHITE)) {
-                    branch = new Tuple<>(action, this.euristics.check(position, action, turn, pastStates));
+                if (!newState.second().getTurn().equals(State.Turn.BLACK) && !newState.second().getTurn().equals(State.Turn.WHITE)) {
+                    branch = new Tuple<>(newState.first(), this.euristics.check(newState.second(),StateTablut.Turn.BLACK));
                 } else {
-                    branch = minimax(newState, childrenFinder.find(newState, StateTablut.Turn.WHITE), depth - 1, alpha, beta, StateTablut.Turn.WHITE);
+                    branch = minimax(newState.second(), childrenFinder.find(newState.second(), StateTablut.Turn.WHITE), depth - 1, alpha, beta, StateTablut.Turn.WHITE);
                 }
-                if (branch.second() < minEval.second()) minEval = new Tuple<>(action, branch.second());
+                if (branch.second() < minEval.second()) minEval = new Tuple<>(newState.first(), branch.second());
                 beta = Math.min(beta, branch.second());
                 if (beta <= alpha) break;
             }
@@ -268,13 +261,22 @@ public class JanacaClient extends TablutClient {
 
     }
 
-    private List<Action> SortActions(State position, Set<Action> actions, StateTablut.Turn turn) {
-        return actions.stream()
+    private List<Tuple<Action, State>> SortActions(Set<Tuple<Action, State>> newStates, StateTablut.Turn turn) {
+        var debugList = newStates.stream()
                 .sorted(turn.equals(State.Turn.WHITE) ?
-                        ActionComparator.get(position, turn, euristics, pastStates).reversed() :
-                        ActionComparator.get(position, turn, euristics, pastStates))
-                .limit(actions.size() / TAKE_BEST_MOVES_FACTOR)
+                        ActionComparator.get(euristics,State.Turn.WHITE).reversed() :
+                        ActionComparator.get(euristics, State.Turn.BLACK))
+                .limit(newStates.size() / TAKE_BEST_MOVES_FACTOR)
+                .map(t-> new Tuple(t,euristics.check(t.second(),State.Turn.WHITE)))
                 .toList();
+
+                return newStates.stream()
+                .sorted(turn.equals(State.Turn.WHITE) ?
+                        ActionComparator.get(euristics,State.Turn.WHITE).reversed() :
+                        ActionComparator.get(euristics,State.Turn.BLACK))
+                .limit(newStates.size() / TAKE_BEST_MOVES_FACTOR)
+                .toList();
+
     }
 
     private boolean timeEspired() {

@@ -17,11 +17,9 @@ public class ChildrenFinder {
         this.rules = rules;
     }
 
-    public Set<Action> find(State state, StateTablut.Turn turn) {
+    public Set<Tuple<Action, State>> find(State state, StateTablut.Turn turn) {
         List<int[]> pawns = new ArrayList<>();
-        Set<Action> possibleMoves = new HashSet<>();
-
-        // If the game is not running, i.e. it's neither black nor white turn, no moves are possible
+        Set<Tuple<Action, State>> possibleMoves = new HashSet<>();        // If the game is not running, i.e. it's neither black nor white turn, no moves are possible
         if (!state.getTurn().equals(State.Turn.BLACK) && !state.getTurn().equals(State.Turn.WHITE))
             return possibleMoves;
 
@@ -43,7 +41,7 @@ public class ChildrenFinder {
         }
 
         // Parallelize the loop for each pawn using parallelStream
-        pawns.parallelStream().forEach(pawn -> {
+        pawns.forEach(pawn -> {
             int row = pawn[0];
             int col = pawn[1];
             String from = state.getBox(row, col);
@@ -53,12 +51,15 @@ public class ChildrenFinder {
             checkDirection(state, turn, from, row, col, 1, 0, possibleMoves);  // Move down
             checkDirection(state, turn, from, row, col, 0, -1, possibleMoves); // Move left
             checkDirection(state, turn, from, row, col, 0, 1, possibleMoves);  // Move right
+            if (possibleMoves.isEmpty()){
+                int debugVariable = 0;
+            }
         });
 
         return possibleMoves;
     }
 
-    private void checkDirection(State state, StateTablut.Turn turn, String from, int row, int col, int rowDelta, int colDelta, Set<Action> possibleMoves) {
+    private void checkDirection(State state, StateTablut.Turn turn, String from, int row, int col, int rowDelta, int colDelta, Set<Tuple<Action, State>>  possibleMoves) {
         int newRow = row + rowDelta;
         int newCol = col + colDelta;
 
@@ -69,8 +70,8 @@ public class ChildrenFinder {
             String to = state.getBox(newRow, newCol);
             try {
                 Action move = new Action(from, to, turn);
-                this.rules.checkMove(state.clone(), move);
-                possibleMoves.add(move);
+                State newState = this.rules.checkMove(state.clone(), move);
+                possibleMoves.add(new Tuple<>(move,newState));
             } catch (Exception e) {
                 break; // Stop further checks in this direction if a move fails
             }

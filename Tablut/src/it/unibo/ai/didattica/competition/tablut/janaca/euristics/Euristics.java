@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public interface Euristics {
-    Double check(State position, Action action, State.Turn turn, List<State> pastStates);
+    Double check(State position, State.Turn turn);
 
 }
 

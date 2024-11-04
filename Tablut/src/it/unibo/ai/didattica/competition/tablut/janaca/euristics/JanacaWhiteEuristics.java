@@ -32,53 +32,58 @@ public class JanacaWhiteEuristics implements TurnSpecificEuristics {
     }
 
     @Override
-    public Double check(State position, Action action, List<State> pastStates) {
+    public Double check(State position) {
         final MeasuresImpl measures = new MeasuresImpl(position);
         State newState;
 
         final double CAPTURED_COEFF = 1000.0;
         final double FRIENDILY_COEFF = 15.0;
-        final double FEAR_COEFF = 5.0;
+        final double FEAR_COEFF = 100.0;
+        final double COURAGE_COEFF = 70.0;
 
-        final double DISCOVERING_PATH = 500.0;
-        final double ESCAPES = 1_000_000.0;
+        final double DISCOVERING_PATH = 200.0;
+        final double ESCAPES = 1_000.0;
 
-        boolean haveMovedKing = position.getPawn(action.getRowFrom(),action.getColumnFrom()).equals(State.Pawn.KING);
+        //boolean haveMovedKing = position.getPawn(action.getRowFrom(),action.getColumnFrom()).equals(State.Pawn.KING);
 
         try {
-            newState = game.checkMove(position.clone(), action);
+            newState = position; //game.checkMove(position.clone(), action);
 
             if (newState.getTurn().equals(State.Turn.WHITEWIN)) {
                 return Double.POSITIVE_INFINITY;
             }
 
-            double bias = 10000;
+            //double bias = 10000;
 
             int before = 0; //measures.globalNearAllies(position, action);
-            int next = measures.globalNearAllies(newState, action);
+            int next = measures.globalNearAllies(newState);
             double friendily = FRIENDILY_COEFF * (next - before);
 
             before = 0; //measures.globalNearEnemies(position, action);
-            next = measures.globalNearEnemies(newState, action);
+            next = measures.globalNearEnemies(newState);
             double enemies = FEAR_COEFF * (next - before);
+
+            next = measures.leftAllies(newState);
+            double allies = COURAGE_COEFF * next;
 
             before = 0; //measures.leftEnemies(position);
             next = measures.leftEnemies(newState);
             double captured = CAPTURED_COEFF * (next - before);
 
-            List<Double> myValues = new ArrayList<>(List.of(bias, friendily, enemies, captured));
+            //List<Double> myValues = new ArrayList<>(List.of(bias, friendily, enemies, captured));
+            List<Double> myValues = new ArrayList<>(List.of(friendily, enemies, captured));
 
-            if (haveMovedKing){
-                before = measures.amountPotentialEscapes(position,game);
-                next = measures.amountPotentialEscapes(newState, game);
-                double pot = DISCOVERING_PATH * (next - before);
+            //if (haveMovedKing){
+            before = measures.amountPotentialEscapes(position,game);
+            next = measures.amountPotentialEscapes(newState, game);
+            double pot = DISCOVERING_PATH * (next - before);
 
-                before = 0; // measures.amountPotentialEscapes(position,game);
-                next = measures.amountRealEscapes(newState, game);
-                double escapes = ESCAPES * (next - before);
+            before = 0; // measures.amountPotentialEscapes(position,game);
+            next = 0; //measures.amountRealEscapes(newState, game);
+            double escapes = ESCAPES * (next - before);
 
-                myValues.addAll(List.of(pot,escapes));
-            }
+            myValues.addAll(List.of(pot,escapes));
+            //}
 
             return Math.max(0, myValues.stream().reduce(Double::sum).orElseGet(() -> 0.0));
 

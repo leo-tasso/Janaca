@@ -50,14 +50,14 @@ public class MeasuresImpl implements Measures {
     }
 
     @Override
-    public int globalNearAllies(State actState, Action pos) {
+    public int globalNearAllies(State actState) {
         Pawn source = actState.getTurn().equals(State.Turn.WHITE) ? Pawn.WHITE : Pawn.BLACK;
         Pawn toConsider = source;
         return this.countGlobalNearby(actState, source, toConsider);
     }
 
     @Override
-    public int globalNearEnemies(State actState, Action pos) {
+    public int globalNearEnemies(State actState) {
         Pawn source = actState.getTurn().equals(State.Turn.WHITE) ? Pawn.WHITE : Pawn.BLACK;
         Pawn toConsider = (source == Pawn.WHITE) ? Pawn.BLACK : Pawn.WHITE;
         return this.countGlobalNearby(actState, source, toConsider);
@@ -70,6 +70,12 @@ public class MeasuresImpl implements Measures {
         State.Turn turn = actState.getTurn();
         //only because in the new state "turn is swapped"
         return turn.equals(State.Turn.BLACK) ?  this.amountBlack - countPieces(actState, Pawn.BLACK) : this.amountWhite - countPieces(actState, Pawn.WHITE);
+    }
+
+    @Override
+    public int leftAllies(State actState) {
+        State.Turn turn = actState.getTurn();
+        return turn.equals(State.Turn.BLACK) ? this.amountWhite - countPieces(actState, Pawn.WHITE) : this.amountBlack - countPieces(actState, Pawn.BLACK);
     }
 
 
@@ -120,7 +126,7 @@ public class MeasuresImpl implements Measures {
                 throw new RuntimeException(e);
             }
             try {
-                rules.checkMove(actState, a);
+                rules.checkMove(actState.clone(), a);
                 return 1;
             } catch (Exception e){
                 return 0;

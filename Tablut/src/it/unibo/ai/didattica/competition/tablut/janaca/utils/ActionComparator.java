@@ -9,8 +9,8 @@ import java.util.Comparator;
 import java.util.List;
 
 public class ActionComparator {
-    public static Comparator<Action> get(State position, StateTablut.Turn turn, Euristics euristics, List<State> pastStates) {
-        return Comparator.comparing(action ->
-                euristics.check(position.clone(), action,turn, pastStates));
+    public static Comparator<Tuple<Action, State>> get(Euristics euristics, State.Turn turn) {
+        return Comparator.comparing(p ->
+                euristics.check(p.second(), turn));
     }
 }

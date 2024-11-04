@@ -13,15 +13,15 @@ public class JanacaEuristics implements Euristics {
     }
     
     @Override
-    public Double check(State position, Action action, StateTablut.Turn turn, List<State> pastStates){
+    public Double check(State position, State.Turn turn) {
         if(turn.equals(StateTablut.Turn.WHITE)){
-            return this.whiteEuristics.check(position, action, pastStates);
+            return this.whiteEuristics.check(position);
         }
         else if(turn.equals(StateTablut.Turn.BLACK)){
-            return - this.blackEuristics.check(position, action, pastStates);
+            return - this.blackEuristics.check(position);
         }
         else{
-            throw new IllegalArgumentException("Invalid turn: " + turn);
+            throw new IllegalArgumentException("Invalid turn: " + position.getTurn());
         }
     }
 }

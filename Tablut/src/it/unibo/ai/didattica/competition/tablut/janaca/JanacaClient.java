@@ -131,7 +131,7 @@ public class JanacaClient extends TablutClient {
                 int depth = 0;
                 Action a = null;
                 try {
-                    while (!this.timeEspired() && depth <2) {
+                    while (!this.timeEspired() && depth <2) { //TODO TO MODIFY TO SET DEPTH
                         int currentDepth = depth;
                         State finalState = state;
                         Future<Tuple<Action, Double>> futureTask = executor.submit(() -> minimax(finalState, possibleMoves, currentDepth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, finalState.getTurn()));

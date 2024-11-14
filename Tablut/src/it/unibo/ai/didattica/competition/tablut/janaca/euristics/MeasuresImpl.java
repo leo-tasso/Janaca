@@ -118,6 +118,7 @@ public class MeasuresImpl implements Measures {
 
     @Override
     public int amountRealEscapes(State actState, Game rules) {
+        /*
         var kingPos = this.getKingPosition(actState);
         return moveToExtremis(kingPos).stream().mapToInt(pp -> {
 
@@ -136,7 +137,8 @@ public class MeasuresImpl implements Measures {
             } catch (Exception e){
                 return 0;
             }
-        }).sum();
+        }).sum();*/
+        return 0;
     }
 
 

@@ -99,16 +99,20 @@ public class MeasuresImpl implements Measures {
 
     @Override
     public int amountPotentialEscapes(State actState, Game rules) {
+//        var tmpState = actState.clone();
+//        var tmpBoard = tmpState.getBoard();
+//        nord_sud_ovest_est(kingPos,false)
+//                .forEach(
+//                        column -> column.forEach(pp -> tmpBoard[pp.first()][pp.second()] = Pawn.EMPTY)
+//                );
+//        tmpState.setBoard(tmpBoard);
+//
+//        return this.amountRealEscapes(tmpState, rules);
         var kingPos = this.getKingPosition(actState);
-        var tmpState = actState.clone();
-        var tmpBoard = tmpState.getBoard();
-        nord_sud_ovest_est(kingPos,false)
-                .forEach(
-                        column -> column.forEach(pp -> tmpBoard[pp.first()][pp.second()] = Pawn.EMPTY)
-                );
-        tmpState.setBoard(tmpBoard);
-
-        return this.amountRealEscapes(tmpState, rules);
+        var interesting = Set.of(1,2,6,7);
+        var row = interesting.contains(kingPos.first()) ? 1 : 0;
+        var cols = interesting.contains(kingPos.first()) ? 1 : 0;
+        return row+cols;
     }
 
     @Override

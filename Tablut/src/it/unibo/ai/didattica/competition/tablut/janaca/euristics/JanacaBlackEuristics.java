@@ -29,9 +29,6 @@ public class JanacaBlackEuristics implements TurnSpecificEuristics {
             value += m.leftEnemies(position) * 100;
             value -= m.leftAllies(position) * 70;
 
-            if(m.amountAlliesNearKing(position)!=0){
-                int debugVariable = 0;
-            }
             value += m.amountAlliesNearKing(position) * 50;
 
             value -= m.amountPotentialEscapes(position,game) * 15;

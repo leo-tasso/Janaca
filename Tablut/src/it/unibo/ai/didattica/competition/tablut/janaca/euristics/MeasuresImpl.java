@@ -141,19 +141,33 @@ public class MeasuresImpl implements Measures {
 
     private MeasurePayload getNearby(State toExplore, Tuple<Integer, Integer> start) {
 
-        Iterator<Integer> dx = Stream.of(-1, 1).map(ddx -> start.first() + ddx).filter(i -> i>=0 && i<amountRows).iterator();
-        Iterator<Integer> dy = Stream.of(-1, 1).map(ddy -> start.second() + ddy).filter(i -> i>=0 && i<amountCols).iterator();
+        //Iterator<Integer> dx = Stream.of(-1, 1).map(ddx -> start.first()).filter(i -> i>=0 && i<amountRows).iterator();
+        //Iterator<Integer> dy = Stream.of(-1, 1).map(ddy -> start.second()).filter(i -> i>=0 && i<amountCols).iterator();
 //      IntStream.rangeClosed(Math.max(0, start.first() - 1), Math.min(amountRows - 1, start.first() + 1)).iterator();
 //      Iterator<Integer> dy = IntStream.rangeClosed(Math.max(0, start.first() - 1), Math.min(amountCols - 1, start.first() + 1)).iterator();
+
+        var row = start.first();
+        var col = start.second();
+
+        List<Tuple<Integer, Integer>> directions = List.of(
+          new Tuple<>(row, col - 1),
+          new Tuple<>(row, col + 1),
+          new Tuple<>(row - 1, col),
+          new Tuple<>(row + 1, col)
+        );
 
         var whitePawnSym = Pawn.WHITE;
         var blackPawnSym = Pawn.BLACK;
         var kingPawnSym = Pawn.KING;
 
-        var tmp = Stream.iterate(dx.next(), i -> dx.hasNext(), i -> dx.next())
+        Map<Pawn, List<Tuple<Integer,Integer>>> tmp = directions.stream()
+                .filter(pos -> pos.first() >= 0 && pos.first() < amountRows && pos.second() >= 0 && pos.second() < amountCols)
+                .collect(Collectors.groupingBy(pos -> toExplore.getPawn(pos.first(),pos.second())));
+
+        /*var tmp = Stream.iterate(dx.next(), i -> dx.hasNext(), i -> dx.next())
                 .flatMap(i -> Stream.iterate(dy.next(), j -> dy.hasNext(), j -> dy.next()).map(j -> new Tuple<>(i, j)))
                 .collect(Collectors.groupingBy(pp -> toExplore.getPawn(pp.first(), pp.second()))
-                );
+                );*/
         return new MeasurePayload(
                 new HashSet<>(tmp.getOrDefault(whitePawnSym, List.of())),
                 new HashSet<>(tmp.getOrDefault(blackPawnSym, List.of())),
@@ -203,9 +217,9 @@ public class MeasuresImpl implements Measures {
 
     private int exploreNearby(State actState, Tuple<Integer, Integer> start, boolean areAlly) {
         if ((actState.getTurn() == State.Turn.WHITE && areAlly) || (actState.getTurn() == State.Turn.BLACK && !areAlly)) {
-            return this.getNearby(actState, start).whitePawn.size();
-        } else {
             return this.getNearby(actState, start).blackPawn.size();
+        } else {
+            return this.getNearby(actState, start).whitePawn.size();
         }
     }
 

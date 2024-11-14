@@ -17,7 +17,9 @@ public class JanacaClient extends TablutClient {
 
     public static final int TOLLERANCE = 5000; //5 secs
     public static final int TAKE_BEST_MOVES_FACTOR = 1;
-    public static final Optional<Integer> CUSTOM_TIMEOUT = Optional.of(150000);  //set to override server timeout (in seconds)
+    public static final Optional<Integer> CUSTOM_TIMEOUT =  Optional.of(20);  //set to override server timeout (in seconds)
+
+    private static final boolean debug = false;
 
     private final int game;
     private Game rules = null;
@@ -126,12 +128,12 @@ public class JanacaClient extends TablutClient {
                 //Construct the set of actions
                 ExecutorService executor = Executors.newSingleThreadExecutor();
 
-                Set<Tuple<Action, State>>  possibleMoves = childrenFinder.find(state, state.getTurn());
+                Set<Tuple<Action, State>> possibleMoves = childrenFinder.find(state, state.getTurn());
 
                 int depth = 0;
                 Action a = null;
                 try {
-                    while (!this.timeEspired() && depth <4) { //TODO TO MODIFY TO SET DEPTH
+                    while (!this.timeEspired()) { //TODO TO MODIFY TO SET DEPTH
                         int currentDepth = depth;
                         State finalState = state;
                         Future<Tuple<Action, Double>> futureTask = executor.submit(() -> minimax(finalState, possibleMoves, currentDepth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, finalState.getTurn()));
@@ -202,30 +204,33 @@ public class JanacaClient extends TablutClient {
             Tuple<Action, State> move = null;
             if (position.getTurn().equals(StateTablut.Turn.WHITE)) {
 
-                var debugList = actions.stream()
-                        .sorted(Comparator.comparing(newStateTuple -> -this.euristics.check(newStateTuple.second(),StateTablut.Turn.WHITE)))
-                        .map(newStateTuple -> new Tuple(newStateTuple, this.euristics.check(newStateTuple.second(),StateTablut.Turn.WHITE)))
-                        .toList();
-
-               move = actions.stream()
-                .max(Comparator.comparing(newStateTuple -> this.euristics.check(newStateTuple.second(),StateTablut.Turn.WHITE)))
-                .orElse(null);
-            } else if (position.getTurn().equals(StateTablut.Turn.BLACK)) {
-
-
-                var debugList = actions.stream()
-                        .sorted(Comparator.comparing(newStateTuple -> this.euristics.check(newStateTuple.second(),StateTablut.Turn.BLACK)))
-                        .map(newStateTuple -> new Tuple(newStateTuple, this.euristics.check(newStateTuple.second(),StateTablut.Turn.BLACK)))
-                        .toList();
+                if (debug) {
+                    var debugList = actions.stream()
+                            .sorted(Comparator.comparing(newStateTuple -> -this.euristics.check(newStateTuple.second(), StateTablut.Turn.WHITE)))
+                            .map(newStateTuple -> new Tuple(newStateTuple, this.euristics.check(newStateTuple.second(), StateTablut.Turn.WHITE)))
+                            .toList();
+                }
 
                 move = actions.stream()
-                .min(Comparator.comparing(newStateTuple -> this.euristics.check(newStateTuple.second(),StateTablut.Turn.BLACK)))
-                .orElse(null);
+                        .max(Comparator.comparing(newStateTuple -> this.euristics.check(newStateTuple.second(), StateTablut.Turn.WHITE)))
+                        .orElse(null);
+            } else if (position.getTurn().equals(StateTablut.Turn.BLACK)) {
+
+                if (debug) {
+                    var debugList = actions.stream()
+                            .sorted(Comparator.comparing(newStateTuple -> this.euristics.check(newStateTuple.second(), StateTablut.Turn.BLACK)))
+                            .map(newStateTuple -> new Tuple(newStateTuple, this.euristics.check(newStateTuple.second(), StateTablut.Turn.BLACK)))
+                            .toList();
+                }
+
+                move = actions.stream()
+                        .min(Comparator.comparing(newStateTuple -> this.euristics.check(newStateTuple.second(), StateTablut.Turn.BLACK)))
+                        .orElse(null);
             }
             if (move == null) {
-                int debugVariable =0;
+                int debugVariable = 0;
             }
-            return new Tuple<>(move.first(), this.euristics.check(move.second(),position.getTurn()));
+            return new Tuple<>(move.first(), this.euristics.check(move.second(), position.getTurn()));
         }
 
         if (turn.equals(StateTablut.Turn.WHITE)) {
@@ -233,7 +238,7 @@ public class JanacaClient extends TablutClient {
             for (Tuple<Action, State> newState : SortActions(actions, turn)) {
                 Tuple<Action, Double> branch = new Tuple<>(null, Double.NEGATIVE_INFINITY);
                 if (!newState.second().getTurn().equals(State.Turn.BLACK) && !newState.second().getTurn().equals(State.Turn.WHITE)) {
-                    branch = new Tuple<>(newState.first(), this.euristics.check(newState.second(),StateTablut.Turn.WHITE));
+                    branch = new Tuple<>(newState.first(), this.euristics.check(newState.second(), StateTablut.Turn.WHITE));
                 } else {
                     branch = minimax(newState.second(), childrenFinder.find(newState.second(), StateTablut.Turn.BLACK), depth - 1, alpha, beta, StateTablut.Turn.BLACK);
                 }
@@ -248,7 +253,7 @@ public class JanacaClient extends TablutClient {
             for (Tuple<Action, State> newState : SortActions(actions, turn)) {
                 Tuple<Action, Double> branch = new Tuple<>(null, Double.POSITIVE_INFINITY);
                 if (!newState.second().getTurn().equals(State.Turn.BLACK) && !newState.second().getTurn().equals(State.Turn.WHITE)) {
-                    branch = new Tuple<>(newState.first(), this.euristics.check(newState.second(),StateTablut.Turn.BLACK));
+                    branch = new Tuple<>(newState.first(), this.euristics.check(newState.second(), StateTablut.Turn.BLACK));
                 } else {
                     branch = minimax(newState.second(), childrenFinder.find(newState.second(), StateTablut.Turn.WHITE), depth - 1, alpha, beta, StateTablut.Turn.WHITE);
                 }
@@ -262,18 +267,20 @@ public class JanacaClient extends TablutClient {
     }
 
     private List<Tuple<Action, State>> SortActions(Set<Tuple<Action, State>> newStates, StateTablut.Turn turn) {
-        var debugList = newStates.stream()
-                .sorted(turn.equals(State.Turn.WHITE) ?
-                        ActionComparator.get(euristics,State.Turn.WHITE).reversed() :
-                        ActionComparator.get(euristics, State.Turn.BLACK))
-                .limit(newStates.size() / TAKE_BEST_MOVES_FACTOR)
-                .map(t-> new Tuple(t,euristics.check(t.second(),State.Turn.WHITE)))
-                .toList();
+        if (debug) {
+            var debugList = newStates.stream()
+                    .sorted(turn.equals(State.Turn.WHITE) ?
+                            ActionComparator.get(euristics, State.Turn.WHITE).reversed() :
+                            ActionComparator.get(euristics, State.Turn.BLACK))
+                    .limit(newStates.size() / TAKE_BEST_MOVES_FACTOR)
+                    .map(t -> new Tuple(t, euristics.check(t.second(), State.Turn.WHITE)))
+                    .toList();
+        }
 
-                return newStates.stream()
+        return newStates.stream()
                 .sorted(turn.equals(State.Turn.WHITE) ?
-                        ActionComparator.get(euristics,State.Turn.WHITE).reversed() :
-                        ActionComparator.get(euristics,State.Turn.BLACK))
+                        ActionComparator.get(euristics, State.Turn.WHITE).reversed() :
+                        ActionComparator.get(euristics, State.Turn.BLACK))
                 .limit(newStates.size() / TAKE_BEST_MOVES_FACTOR)
                 .toList();
 

@@ -109,9 +109,10 @@ public class MeasuresImpl implements Measures {
 //
 //        return this.amountRealEscapes(tmpState, rules);
         var kingPos = this.getKingPosition(actState);
-        var interesting = Set.of(1,2,6,7);
-        var row = interesting.contains(kingPos.first()) ? 1 : 0;
-        var cols = interesting.contains(kingPos.first()) ? 1 : 0;
+        var interesting = Set.of(1,7);
+        var interesting2 = Set.of(2,6);
+        var row = interesting.contains(kingPos.first()) ? 1 : (interesting2.contains(kingPos.first()) ? 2 : 0);
+        var cols = interesting.contains(kingPos.second()) ? 1 : (interesting2.contains(kingPos.second()) ? 2 : 0);
         return row+cols;
     }
 

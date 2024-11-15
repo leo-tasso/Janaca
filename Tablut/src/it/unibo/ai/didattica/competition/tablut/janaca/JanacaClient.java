@@ -16,13 +16,13 @@ import java.util.concurrent.*;
 public class JanacaClient extends TablutClient {
 
     public static final int TOLLERANCE = 5000; //5 secs
-    public static final int TAKE_BEST_MOVES_FACTOR = 1;
-    public static final Optional<Integer> CUSTOM_TIMEOUT =  Optional.of(20);  //set to override server timeout (in seconds)
+    public static final float TAKE_BEST_MOVES_FACTOR = 1;
+    public static final Optional<Integer> CUSTOM_TIMEOUT = Optional.of(20);  //set to override server timeout (in seconds)
 
     private static final boolean debug = false;
 
     private final int game;
-    private Game rules = null;
+    private GameAshtonTablut rules = null;
     private JanacaEuristics euristics = null;
     private ChildrenFinder childrenFinder = null;
     private long timer = 0;
@@ -82,25 +82,13 @@ public class JanacaClient extends TablutClient {
             e.printStackTrace();
         }
         State state;
-//Set Game rules
-        switch (this.game) {
-            case 1, 3:
-                this.rules = new GameTablut();
-                break;
-            case 2:
-                this.rules = new GameModernTablut();
-                break;
-            case 4:
-                this.rules = new GameAshtonTablut(99, 0, "garbage", "fake", "fake");
-                System.out.println("Ashton Tablut game");
-                break;
-            default:
-                System.out.println("Error in game selection");
-                System.exit(4);
-        }
+
+        this.rules = new GameAshtonTablut(0, 5);
+        System.out.println("Ashton Tablut game");
+
 
         euristics = new JanacaEuristics(this.rules);
-        childrenFinder = new ChildrenFinder(this.rules);
+        childrenFinder = new ChildrenFinder();
 
         System.out.println("You are player " + this.getPlayer().toString() + "!");
 
@@ -128,12 +116,12 @@ public class JanacaClient extends TablutClient {
                 //Construct the set of actions
                 ExecutorService executor = Executors.newSingleThreadExecutor();
 
-                Set<Tuple<Action, State>> possibleMoves = childrenFinder.find(state, state.getTurn());
+                Set<Tuple<Action, State>> possibleMoves = childrenFinder.find(state, state.getTurn(), this.rules.clone());
 
                 int depth = 0;
                 Action a = null;
                 try {
-                    while (!this.timeEspired()) { //TODO TO MODIFY TO SET DEPTH
+                    while (!this.timeEspired()) {
                         int currentDepth = depth;
                         State finalState = state;
                         Future<Tuple<Action, Double>> futureTask = executor.submit(() -> minimax(finalState, possibleMoves, currentDepth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, finalState.getTurn()));
@@ -159,6 +147,10 @@ public class JanacaClient extends TablutClient {
                 if (a == null) a = possibleMoves.stream().findFirst().get().first();
                 System.out.println("Move selected: " + a.toString());
                 try {
+                    try {
+                        this.rules.checkMove(state, a);
+                    }
+                    catch (Exception e) {}
                     this.write(a);
                 } catch (ClassNotFoundException | IOException e) {
                     e.printStackTrace();
@@ -240,7 +232,12 @@ public class JanacaClient extends TablutClient {
                 if (!newState.second().getTurn().equals(State.Turn.BLACK) && !newState.second().getTurn().equals(State.Turn.WHITE)) {
                     branch = new Tuple<>(newState.first(), this.euristics.check(newState.second(), StateTablut.Turn.WHITE));
                 } else {
-                    branch = minimax(newState.second(), childrenFinder.find(newState.second(), StateTablut.Turn.BLACK), depth - 1, alpha, beta, StateTablut.Turn.BLACK);
+                    var newRules = this.rules.clone();
+                    try {
+                        newRules.checkMove(newState.second(), newState.first());
+                    }
+                    catch (Exception e) {}
+                    branch = minimax(newState.second(), childrenFinder.find(newState.second(), StateTablut.Turn.BLACK, newRules), depth - 1, alpha, beta, StateTablut.Turn.BLACK);
                 }
                 if (branch.second() > maxEval.second()) maxEval = new Tuple<>(newState.first(), branch.second());
                 alpha = Math.max(alpha, branch.second());
@@ -255,7 +252,12 @@ public class JanacaClient extends TablutClient {
                 if (!newState.second().getTurn().equals(State.Turn.BLACK) && !newState.second().getTurn().equals(State.Turn.WHITE)) {
                     branch = new Tuple<>(newState.first(), this.euristics.check(newState.second(), StateTablut.Turn.BLACK));
                 } else {
-                    branch = minimax(newState.second(), childrenFinder.find(newState.second(), StateTablut.Turn.WHITE), depth - 1, alpha, beta, StateTablut.Turn.WHITE);
+                    var newRules = this.rules.clone();
+                    try {
+                        newRules.checkMove(newState.second(), newState.first());
+                    }
+                    catch (Exception e) {}
+                    branch = minimax(newState.second(), childrenFinder.find(newState.second(), StateTablut.Turn.WHITE, newRules), depth - 1, alpha, beta, StateTablut.Turn.WHITE);
                 }
                 if (branch.second() < minEval.second()) minEval = new Tuple<>(newState.first(), branch.second());
                 beta = Math.min(beta, branch.second());
@@ -272,7 +274,7 @@ public class JanacaClient extends TablutClient {
                     .sorted(turn.equals(State.Turn.WHITE) ?
                             ActionComparator.get(euristics, State.Turn.WHITE).reversed() :
                             ActionComparator.get(euristics, State.Turn.BLACK))
-                    .limit(newStates.size() / TAKE_BEST_MOVES_FACTOR)
+                    .limit((long) (newStates.size() / TAKE_BEST_MOVES_FACTOR))
                     .map(t -> new Tuple(t, euristics.check(t.second(), State.Turn.WHITE)))
                     .toList();
         }
@@ -281,7 +283,7 @@ public class JanacaClient extends TablutClient {
                 .sorted(turn.equals(State.Turn.WHITE) ?
                         ActionComparator.get(euristics, State.Turn.WHITE).reversed() :
                         ActionComparator.get(euristics, State.Turn.BLACK))
-                .limit(newStates.size() / TAKE_BEST_MOVES_FACTOR)
+                .limit((long) (newStates.size() / TAKE_BEST_MOVES_FACTOR))
                 .toList();
 
     }

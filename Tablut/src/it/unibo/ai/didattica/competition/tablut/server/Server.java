@@ -118,7 +118,7 @@ public class Server implements Runnable {
 	 * 
 	 */
 	public static void main(String[] args) {
-		int time = 60;
+		int time = 20;
 		int moveCache = -1;
 		int repeated = 0;
 		int errors = 0;
@@ -521,7 +521,7 @@ public class Server implements Runnable {
 		case 4:
 			state = new StateTablut();
 			state.setTurn(State.Turn.WHITE);
-			this.game = new GameAshtonTablut(state, repeated, this.cacheSize, "logs", whiteName, blackName);
+			this.game = new GameAshtonTablut(repeated, this.cacheSize);
 			break;
 		default:
 			System.out.println("Error in game selection");

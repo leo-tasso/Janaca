@@ -36,47 +36,38 @@ public class GameAshtonTablut implements Game {
 	 * Counter for the moves without capturing that have occurred
 	 */
 	private int movesWithutCapturing;
-	private String gameLogName;
-	private File gameLog;
-	private FileHandler fh;
 	//private Logger loggGame;
 	private List<String> citadels;
 	// private List<String> strangeCitadels;
 	private List<State> drawConditions;
 
-	public GameAshtonTablut(int repeated_moves_allowed, int cache_size, String logs_folder, String whiteName,
-			String blackName) {
-		this(new StateTablut(), repeated_moves_allowed, cache_size, logs_folder, whiteName, blackName);
-	}
-
-	public GameAshtonTablut(State state, int repeated_moves_allowed, int cache_size, String logs_folder,
-			String whiteName, String blackName) {
+	public GameAshtonTablut(int repeated_moves_allowed, int cache_size) {
 		super();
 		this.repeated_moves_allowed = repeated_moves_allowed;
 		this.cache_size = cache_size;
 		this.movesWithutCapturing = 0;
 
-		Path p = Paths.get(logs_folder + File.separator + "_" + whiteName + "_vs_" + blackName + "_"
-				+ new Date().getTime() + "_gameLog.txt");
-		p = p.toAbsolutePath();
-		this.gameLogName = p.toString();
-		File gamefile = new File(this.gameLogName);
-		try {
-			File f = new File(logs_folder);
-			f.mkdirs();
-			if (!gamefile.exists()) {
-				gamefile.createNewFile();
-			}
-			this.gameLog = gamefile;
-			fh = null;
-			fh = new FileHandler(gameLogName, true);
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-		//this.loggGame = Logger.getLogger("GameLog");
-		//loggGame.addHandler(this.fh);
-		this.fh.setFormatter(new SimpleFormatter());
+//		Path p = Paths.get(logs_folder + File.separator + "_" + whiteName + "_vs_" + blackName + "_"
+//				+ new Date().getTime() + "_gameLog.txt");
+//		p = p.toAbsolutePath();
+//		this.gameLogName = p.toString();
+//		File gamefile = new File(this.gameLogName);
+//		try {
+//			File f = new File(logs_folder);
+//			f.mkdirs();
+//			if (!gamefile.exists()) {
+//				gamefile.createNewFile();
+//			}
+//			this.gameLog = gamefile;
+//			fh = null;
+//			fh = new FileHandler(gameLogName, true);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//			System.exit(1);
+//		}
+//		//this.loggGame = Logger.getLogger("GameLog");
+//		//loggGame.addHandler(this.fh);
+//		this.fh.setFormatter(new SimpleFormatter());
 		//loggGame.setLevel(Level.FINE);
 		//loggGame.fine("Players:\t" + whiteName + "\tvs\t" + blackName);
 		//loggGame.fine("Repeated moves allowed:\t" + repeated_moves_allowed + "\tCache:\t" + cache_size);
@@ -108,7 +99,11 @@ public class GameAshtonTablut implements Game {
 	}
 
 	@Override
-	public State checkMove(State state, Action a)
+	public State checkMove(State state, Action a) throws PawnException, DiagonalException, ClimbingException, ActionException, CitadelException, StopException, OccupitedException, BoardException, ClimbingCitadelException, ThroneException {
+		return this.checkMove(state,a,true);
+	}
+
+	public State checkMove(State state, Action a, boolean addToDoneList)
 			throws BoardException, ActionException, StopException, PawnException, DiagonalException, ClimbingException,
 			ThroneException, OccupitedException, ClimbingCitadelException, CitadelException {
 		//this.loggGame.fine(a.toString());
@@ -275,7 +270,7 @@ public class GameAshtonTablut implements Game {
 		}
 
 		// if something has been captured, clear cache for draws
-		if (this.movesWithutCapturing == 0) {
+		if (this.movesWithutCapturing == 0 && addToDoneList) {
 			this.drawConditions.clear();
 			//this.loggGame.fine("Capture! Draw cache cleared!");
 		}
@@ -284,7 +279,7 @@ public class GameAshtonTablut implements Game {
 		int trovati = 0;
 		for (State s : drawConditions) {
 
-			System.out.println(s.toString());
+			//System.out.println(s.toString());
 
 			if (s.equals(state)) {
 				// DEBUG: //
@@ -310,10 +305,10 @@ public class GameAshtonTablut implements Game {
 		if (trovati > 0) {
 			//this.loggGame.fine("Equal states found: " + trovati);
 		}
-		if (cache_size >= 0 && this.drawConditions.size() > cache_size) {
+		if (cache_size >= 0 && this.drawConditions.size() > cache_size && addToDoneList) {
 			this.drawConditions.remove(0);
 		}
-		this.drawConditions.add(state.clone());
+		if(addToDoneList) this.drawConditions.add(state.clone());
 
 		//this.loggGame.fine("Current draw cache size: " + this.drawConditions.size());
 
@@ -694,9 +689,6 @@ public class GameAshtonTablut implements Game {
 		return state;
 	}
 
-	public File getGameLog() {
-		return gameLog;
-	}
 
 	public int getMovesWithutCapturing() {
 		return movesWithutCapturing;
@@ -715,19 +707,20 @@ public class GameAshtonTablut implements Game {
 		return cache_size;
 	}
 
-	public List<State> getDrawConditions() {
-		return drawConditions;
-	}
 
-	public void clearDrawConditions() {
-		drawConditions.clear();
+	public void setDrawConditions(List<State> drawConditions) {
+		this.drawConditions = drawConditions;
 	}
-	
 
 	@Override
 	public void endGame(State state) {
 		//this.loggGame.fine("Stato:\n"+state.toString());
 	}
 
-
+	@Override
+	public GameAshtonTablut clone() {
+		var g =  new GameAshtonTablut(this.repeated_moves_allowed,this.cache_size);
+		g.setDrawConditions(new ArrayList<>(this.drawConditions));
+		return g;
+	}
 }

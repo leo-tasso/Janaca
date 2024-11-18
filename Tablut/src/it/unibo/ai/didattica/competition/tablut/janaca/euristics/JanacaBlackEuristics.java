@@ -6,6 +6,7 @@ import it.unibo.ai.didattica.competition.tablut.domain.State;
 import java.util.List;
 
 public class JanacaBlackEuristics implements TurnSpecificEuristics {
+    public static final double DECREASING_COEFF = 0.9;
     Game game;
 
     public JanacaBlackEuristics(Game game) {
@@ -25,9 +26,12 @@ public class JanacaBlackEuristics implements TurnSpecificEuristics {
             if(position.getTurn().equals(State.Turn.DRAW)){
                 value -= 4000;
             }
+            value -= m.leftAllies(position) * 150;
 
-            value += m.leftEnemies(position) * 100;
-            value -= m.leftAllies(position) * 120;
+            value += (150 * (1 - Math.pow(DECREASING_COEFF, m.leftEnemies(position))) / (1 - DECREASING_COEFF));;
+            if(m.leftEnemies(position)!=0){
+                int debugVariable = 0;
+            }
 
             value += m.amountAlliesNearKing(position) * 100;
 

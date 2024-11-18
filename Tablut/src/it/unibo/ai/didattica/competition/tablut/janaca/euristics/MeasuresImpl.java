@@ -56,7 +56,7 @@ public class MeasuresImpl implements Measures {
  */
 
     private void populateNearby(State actState) {
-        if (CACHE_NEARBY.size() > 10_000){
+        if (CACHE_NEARBY.size() > 10){
             CACHE_NEARBY.clear();
         }
         if (!CACHE_NEARBY.containsKey(actState)) {
@@ -185,7 +185,7 @@ public class MeasuresImpl implements Measures {
 //    }
 
     private int lefts(State actState, boolean countWhite) {
-        if (CACHE_PIECES.size() > 10_000){
+        if (CACHE_PIECES.size() > 10){
             CACHE_PIECES.clear();
         }
         if (!CACHE_PIECES.containsKey(actState)) {

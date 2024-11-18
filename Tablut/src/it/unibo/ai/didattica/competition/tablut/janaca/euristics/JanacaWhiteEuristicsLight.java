@@ -51,7 +51,7 @@ public class JanacaWhiteEuristicsLight implements TurnSpecificEuristics {
             double enemies = 0.0; // FEAR_COEFF * (next - before);
 
             next = measures.leftAllies(newState);
-            double allies = 0.0; //COURAGE_COEFF * next;
+            double allies = COURAGE_COEFF * next;
 
             before = 0; //measures.leftEnemies(position);
             next = measures.leftEnemies(newState);

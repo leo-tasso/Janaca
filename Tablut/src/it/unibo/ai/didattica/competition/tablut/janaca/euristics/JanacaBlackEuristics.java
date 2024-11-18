@@ -15,24 +15,24 @@ public class JanacaBlackEuristics implements TurnSpecificEuristics {
     @Override
     public Double check(State position) {
         MeasuresImpl m = new MeasuresImpl(position);
-        double value = 1000.0;
-        State newState;
+        double value = 10000.0;
+
         try {
             if (position.getTurn().equals(State.Turn.BLACKWIN)){
                 return Double.POSITIVE_INFINITY;
             }
 
             if(position.getTurn().equals(State.Turn.DRAW)){
-                value -= 500;
+                value -= 4000;
             }
 
             value += m.leftEnemies(position) * 100;
-            value -= m.leftAllies(position) * 70;
+            value -= m.leftAllies(position) * 120;
 
-            value += m.amountAlliesNearKing(position) * 50;
+            value += m.amountAlliesNearKing(position) * 100;
 
-            value -= m.amountPotentialEscapes(position,game) * 15;
-            value -= m.amountRealEscapes(position,game) * 30;
+            value -= m.amountPotentialEscapes(position,game) * 200;
+
 
             return value;
         } catch (Exception _) {

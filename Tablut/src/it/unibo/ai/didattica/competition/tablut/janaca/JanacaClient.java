@@ -17,6 +17,7 @@ public class JanacaClient extends TablutClient {
 
     public static final int TOLLERANCE = 5000; //5 secs
     public static final float TAKE_BEST_MOVES_FACTOR = 1;
+    public static final int CORES = 4;
     public static final Optional<Integer> CUSTOM_TIMEOUT = Optional.of(20);  //set to override server timeout (in seconds)
 
     private static final boolean debug = false;
@@ -213,6 +214,7 @@ public class JanacaClient extends TablutClient {
                             .sorted(Comparator.comparing(newStateTuple -> this.euristics.check(newStateTuple.second(), StateTablut.Turn.BLACK)))
                             .map(newStateTuple -> new Tuple(newStateTuple, this.euristics.check(newStateTuple.second(), StateTablut.Turn.BLACK)))
                             .toList();
+                    int debugVariable = 0;
                 }
 
                 move = actions.stream()
@@ -241,7 +243,7 @@ public class JanacaClient extends TablutClient {
                 }
                 if (branch.second() > maxEval.second()) maxEval = new Tuple<>(newState.first(), branch.second());
                 alpha = Math.max(alpha, branch.second());
-                if (beta <= alpha) break;
+                if (beta <= alpha) return maxEval;
             }
             return maxEval;
 
@@ -261,7 +263,7 @@ public class JanacaClient extends TablutClient {
                 }
                 if (branch.second() < minEval.second()) minEval = new Tuple<>(newState.first(), branch.second());
                 beta = Math.min(beta, branch.second());
-                if (beta <= alpha) break;
+                if (beta <= alpha) return minEval;
             }
             return minEval;
         }
@@ -275,8 +277,9 @@ public class JanacaClient extends TablutClient {
                             ActionComparator.get(euristics, State.Turn.WHITE).reversed() :
                             ActionComparator.get(euristics, State.Turn.BLACK))
                     .limit((long) (newStates.size() / TAKE_BEST_MOVES_FACTOR))
-                    .map(t -> new Tuple(t, euristics.check(t.second(), State.Turn.WHITE)))
+                    .map(t -> new Tuple(t, euristics.check(t.second(), turn)))
                     .toList();
+            int debugVariable = 0;
         }
 
         return newStates.stream()

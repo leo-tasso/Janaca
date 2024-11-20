@@ -17,10 +17,10 @@
 //    public JanacaWhiteEuristicsOLD(Game game) {
 //        this.game = game;
 //
-////        Arrays.stream(Measures.class.getMethods())
-////                .map(Method::getName)
-////                .peek(System.out::println)
-////                .forEach(name -> reinforcedCoefficients.put(name, 1.0));
+//        Arrays.stream(Measures.class.getMethods())
+//                .map(Method::getName)
+//                .peek(System.out::println)
+//                .forEach(name -> reinforcedCoefficients.put(name, 1.0));
 //        //MeasuresOLD.state_action.stream().forEach(m -> {myCoefficients.put(m,1.0); return;});
 //
 //        /**

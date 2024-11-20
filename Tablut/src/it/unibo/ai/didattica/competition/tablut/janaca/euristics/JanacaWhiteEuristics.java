@@ -39,12 +39,12 @@ public class JanacaWhiteEuristics implements TurnSpecificEuristics {
 
         final double FRIENDILY_COEFF = 50.0;
         final double FEAR_COEFF = -50.0;
-        final double COURAGE_COEFF = -100.0;
-        final double CAPTURED_COEFF = 1000.0;
+        final double COURAGE_COEFF = -50.0;
+        final double CAPTURED_COEFF = 50.0;
 
-        final double DISCOVERING_PATH = 200.0;
-        final double WARNING = -1000.0;
-        final double ESCAPES = 1_000.0;
+        final double DISCOVERING_PATH = 0.0;
+        final double WARNING = -100.0;
+        final double ESCAPES = 0.0; // 1_000.0;
 
         //boolean haveMovedKing = position.getPawn(action.getRowFrom(),action.getColumnFrom()).equals(State.Pawn.KING);
 
@@ -78,9 +78,9 @@ public class JanacaWhiteEuristics implements TurnSpecificEuristics {
             List<Double> myValues = new ArrayList<>(List.of(100000.0, friendily, allies, enemies, captured));
 
             //if (haveMovedKing){
-            before = measures.amountPotentialEscapes(position,game);
-            next = measures.amountPotentialEscapes(newState, game);
-            double pot = DISCOVERING_PATH * (next - before);
+//            before = measures.amountPotentialEscapes(position,game);
+//            next = measures.amountPotentialEscapes(newState, game);
+            double pot = 0.0; // DISCOVERING_PATH * (next - before);
 
             before = 0; // measures.amountPotentialEscapes(position,game);
             next = 0; //measures.amountRealEscapes(newState, game);

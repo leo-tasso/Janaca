@@ -1,7 +1,6 @@
 package it.unibo.ai.didattica.competition.tablut.janaca;
 
 import it.unibo.ai.didattica.competition.tablut.janaca.euristics.JanacaEuristics;
-import it.unibo.ai.didattica.competition.tablut.janaca.utils.ActionComparator;
 import it.unibo.ai.didattica.competition.tablut.janaca.utils.ChildrenFinder;
 import it.unibo.ai.didattica.competition.tablut.janaca.utils.Tuple;
 import it.unibo.ai.didattica.competition.tablut.client.TablutClient;
@@ -150,14 +149,95 @@ public class JanacaClient extends TablutClient {
                 try {
                     try {
                         this.rules.checkMove(state, a);
+                    } catch (Exception e) {
                     }
-                    catch (Exception e) {}
                     this.write(a);
                 } catch (ClassNotFoundException | IOException e) {
                     e.printStackTrace();
                 }
             }
 
+
+
+
+/*
+            if (this.getPlayer().equals(state.getTurn())) {
+                this.timer = System.currentTimeMillis();
+                // Construct the set of actions
+                ExecutorService executor = Executors.newFixedThreadPool(CORES);
+
+                Set<Tuple<Action, State>> possibleMoves = childrenFinder.find(state, state.getTurn(), this.rules.clone());
+
+                int depth = 0;
+                Action bestAction = null;
+                try {
+                    while (!this.timeEspired()) {
+                        int currentDepth = depth;
+                        State finalState = state;
+
+                        // Split the possible moves among threads
+                        List<Future<Tuple<Action, Double>>> futureTasks = new ArrayList<>();
+                        int partitionSize = (int) Math.ceil(possibleMoves.size() / (float)CORES);
+                        List<Set<Tuple<Action, State>>> partitions = new ArrayList<>(CORES);
+                        Iterator<Tuple<Action, State>> iterator = possibleMoves.iterator();
+
+                        // Create partitions
+                        for (int i = 0; i < CORES; i++) {
+                            Set<Tuple<Action, State>> partition = new HashSet<>();
+                            for (int j = 0; j < partitionSize && iterator.hasNext(); j++) {
+                                partition.add(iterator.next());
+                            }
+                            partitions.add(partition);
+                        }
+
+                        // Submit tasks to executor
+                        for (Set<Tuple<Action, State>> partition : partitions) {
+                            futureTasks.add(executor.submit(() -> minimax(finalState, partition, currentDepth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, finalState.getTurn())));
+                        }
+
+                        try {
+                            Tuple<Action, Double> bestResult = null;
+                            for (Future<Tuple<Action, Double>> future : futureTasks) {
+                                try {
+                                    // Wait for each task to complete within the time limit
+                                    Tuple<Action, Double> result = future.get(this.leftTime(), TimeUnit.MILLISECONDS);
+                                    if (result != null && (bestResult == null || result.second() > bestResult.second())) {
+                                        bestResult = result;
+                                    }
+                                } catch (TimeoutException e) {
+                                    for (Future<Tuple<Action, Double>> futureTimed : futureTasks) {
+                                        futureTimed.cancel(true); // Cancel tasks that take too long
+                                    }
+                                }
+                            }
+
+                            if (bestResult != null) {
+                                bestAction = bestResult.first();
+                            }
+                        } catch (InterruptedException | ExecutionException e) {
+                            e.printStackTrace();
+                            break;
+                        }
+
+                        depth += 2;
+                    }
+                } finally {
+                    executor.shutdownNow();
+                }
+                if (bestAction == null) bestAction = possibleMoves.stream().findFirst().get().first();
+                System.out.println("Move selected: " + bestAction.toString());
+                try {
+                    try {
+                        this.rules.checkMove(state, bestAction);
+                    }
+                    catch (Exception e) {}
+                    this.write(bestAction);
+                } catch (ClassNotFoundException | IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            */
 
             //CHECK STATUS GAME: if i lose/win/draw, game have to stop
             if (this.getPlayer().equals(State.Turn.WHITE)) {
@@ -237,8 +317,8 @@ public class JanacaClient extends TablutClient {
                     var newRules = this.rules.clone();
                     try {
                         newRules.checkMove(newState.second(), newState.first());
+                    } catch (Exception e) {
                     }
-                    catch (Exception e) {}
                     branch = minimax(newState.second(), childrenFinder.find(newState.second(), StateTablut.Turn.BLACK, newRules), depth - 1, alpha, beta, StateTablut.Turn.BLACK);
                 }
                 if (branch.second() > maxEval.second()) maxEval = new Tuple<>(newState.first(), branch.second());
@@ -257,8 +337,8 @@ public class JanacaClient extends TablutClient {
                     var newRules = this.rules.clone();
                     try {
                         newRules.checkMove(newState.second(), newState.first());
+                    } catch (Exception e) {
                     }
-                    catch (Exception e) {}
                     branch = minimax(newState.second(), childrenFinder.find(newState.second(), StateTablut.Turn.WHITE, newRules), depth - 1, alpha, beta, StateTablut.Turn.WHITE);
                 }
                 if (branch.second() < minEval.second()) minEval = new Tuple<>(newState.first(), branch.second());
@@ -271,23 +351,10 @@ public class JanacaClient extends TablutClient {
     }
 
     private List<Tuple<Action, State>> SortActions(Set<Tuple<Action, State>> newStates, StateTablut.Turn turn) {
-        if (debug) {
-            var debugList = newStates.stream()
-                    .sorted(turn.equals(State.Turn.WHITE) ?
-                            ActionComparator.get(euristics, State.Turn.WHITE).reversed() :
-                            ActionComparator.get(euristics, State.Turn.BLACK))
-                    .limit((long) (newStates.size() / TAKE_BEST_MOVES_FACTOR))
-                    .map(t -> new Tuple(t, euristics.check(t.second(), turn)))
-                    .toList();
-            int debugVariable = 0;
-        }
 
-        return newStates.stream()
-                .sorted(turn.equals(State.Turn.WHITE) ?
-                        ActionComparator.get(euristics, State.Turn.WHITE).reversed() :
-                        ActionComparator.get(euristics, State.Turn.BLACK))
-                .limit((long) (newStates.size() / TAKE_BEST_MOVES_FACTOR))
-                .toList();
+        var pointList = newStates.stream().map(x->new Tuple<>(x,this.euristics.check(x.second(), turn)))
+                .sorted(Comparator.comparing(x -> -Math.abs(x.second())));
+        return pointList.map(x->x.first()).toList();
 
     }
 

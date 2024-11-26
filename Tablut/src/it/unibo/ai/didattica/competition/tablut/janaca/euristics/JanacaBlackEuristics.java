@@ -6,8 +6,15 @@ import it.unibo.ai.didattica.competition.tablut.domain.State;
 import java.util.List;
 
 public class JanacaBlackEuristics implements TurnSpecificEuristics {
-    public static final double DECREASING_COEFF = 0.9;
     Game game;
+
+    // Weights
+    private final double draw = 4000.0;
+    private final double alliesPawns = 110.0;
+    private final double enemiesPawns = 100.0;
+    private final double alliesNearKing = 105.0;
+    private final double potentialEscapes = 200.0;
+
 
     public JanacaBlackEuristics(Game game) {
         this.game = game;
@@ -21,22 +28,18 @@ public class JanacaBlackEuristics implements TurnSpecificEuristics {
         try {
             if (position.getTurn().equals(State.Turn.BLACKWIN)){
                 return Double.POSITIVE_INFINITY;
+            }else if(position.getTurn().equals(State.Turn.WHITEWIN)){
+                return Double.NEGATIVE_INFINITY;
             }
 
             if(position.getTurn().equals(State.Turn.DRAW)){
-                value -= 4000;
-            }
-            value -= m.leftAllies(position) * 150;
-
-            value += (150 * (1 - Math.pow(DECREASING_COEFF, m.leftEnemies(position))) / (1 - DECREASING_COEFF));;
-            if(m.leftEnemies(position)!=0){
-                int debugVariable = 0;
+                value -= this.draw;
             }
 
-            value += m.amountAlliesNearKing(position) * 100;
-
-            value -= m.amountPotentialEscapes(position,game) * 200;
-
+            value -= m.leftAllies(position) * this.alliesPawns;
+            value += m.leftEnemies(position) * this.enemiesPawns;
+            value += m.amountAlliesNearKing(position) * this.alliesNearKing;
+            value -= m.amountPotentialEscapes(position,game) * this.potentialEscapes;
 
             return value;
         } catch (Exception _) {
